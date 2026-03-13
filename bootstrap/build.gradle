@@ -1,13 +1,8 @@
-tasks.named("bootJar") {
-    enabled = true
-}
-tasks.named("jar") {
-    enabled = false
-}
-
 dependencies {
+    implementation project(':application')
     implementation project(':presentation')
     implementation project(':infrastructure')
 
     implementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
