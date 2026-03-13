@@ -1,0 +1,160 @@
+{
+  "info": {
+    "_postman_id": "7f87f966-14d8-4ea0-bd6f-2a41d657aef2",
+    "name": "project-auth-server user-sign-up",
+    "description": "회원가입 API 검증용 Postman 컬렉션",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "회원가입 성공",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"tester@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"테스터\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/users/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "signup"
+          ]
+        },
+        "description": "정상 회원가입 요청"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201 Created 반환', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('성공 응답 코드 확인', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.success).to.eql(true);",
+              "    pm.expect(json.code).to.eql('USER_SIGNED_UP');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "회원가입 중복 이메일",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"tester@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"테스터\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/users/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "signup"
+          ]
+        },
+        "description": "동일 이메일을 다시 요청해 409를 확인"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('409 Conflict 반환', function () {",
+              "    pm.response.to.have.status(409);",
+              "});",
+              "",
+              "pm.test('중복 이메일 에러 코드 확인', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.success).to.eql(false);",
+              "    pm.expect(json.code).to.eql('USER-004');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "회원가입 요청값 검증 실패",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"invalid-email\",\n  \"password\": \"1234\",\n  \"name\": \"ㄱ\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/users/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "users",
+            "signup"
+          ]
+        },
+        "description": "Bean Validation 기반 400 응답 확인"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('400 Bad Request 반환', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('공통 입력값 에러 코드 확인', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.success).to.eql(false);",
+              "    pm.expect(json.code).to.eql('COMMON-001');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ]
+}

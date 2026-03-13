@@ -21,6 +21,7 @@ dependencyResolutionManagement {
             version("springBoot", "4.0.3")
             version("springDependencyManagement", "1.1.7")
             version("lombok", "1.18.30")
+            version("springdoc", "3.0.2")
 
             // [플러그인 정의]
             plugin("spring-boot", "org.springframework.boot").versionRef("springBoot")
@@ -28,6 +29,7 @@ dependencyResolutionManagement {
 
             // [라이브러리 정의]
             library("lombok", "org.projectlombok", "lombok").versionRef("lombok")
+            library("springdoc-openapi-webmvc-ui", "org.springdoc", "springdoc-openapi-starter-webmvc-ui").versionRef("springdoc")
         }
     }
 }

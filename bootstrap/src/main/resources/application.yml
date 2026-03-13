@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: project-auth-server
+
+app:
+  docs:
+    title: ${APP_DOCS_TITLE:Project Auth Server API}
+    description: ${APP_DOCS_DESCRIPTION:인증 서버의 OpenAPI 문서입니다.}
+    version: ${APP_DOCS_VERSION:v1}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
