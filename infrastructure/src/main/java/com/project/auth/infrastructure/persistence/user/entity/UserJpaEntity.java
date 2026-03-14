@@ -23,7 +23,7 @@ public class UserJpaEntity {
     @Column(name = "email", nullable = false, unique = true, length = 320)
     private String email;
 
-    @Column(name = "encoded_password", nullable = false, length = 255)
+    @Column(name = "encoded_password", length = 255)
     private String encodedPassword;
 
     @Column(name = "name", nullable = false, length = 20)
@@ -32,6 +32,9 @@ public class UserJpaEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "provider", nullable = false, length = 20)
     private AuthProvider provider;
+
+    @Column(name = "provider_subject", length = 255)
+    private String providerSubject;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -45,13 +48,15 @@ public class UserJpaEntity {
             String encodedPassword,
             String name,
             AuthProvider provider,
+            String providerSubject,
             Instant createdAt
     ) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.email = Objects.requireNonNull(email, "email must not be null");
-        this.encodedPassword = Objects.requireNonNull(encodedPassword, "encodedPassword must not be null");
+        this.encodedPassword = encodedPassword;
         this.name = Objects.requireNonNull(name, "name must not be null");
         this.provider = Objects.requireNonNull(provider, "provider must not be null");
+        this.providerSubject = providerSubject;
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
     }
 
@@ -61,9 +66,10 @@ public class UserJpaEntity {
             String encodedPassword,
             String name,
             AuthProvider provider,
+            String providerSubject,
             Instant createdAt
     ) {
-        return new UserJpaEntity(id, email, encodedPassword, name, provider, createdAt);
+        return new UserJpaEntity(id, email, encodedPassword, name, provider, providerSubject, createdAt);
     }
 
     public UUID getId() {
@@ -84,6 +90,10 @@ public class UserJpaEntity {
 
     public AuthProvider getProvider() {
         return provider;
+    }
+
+    public String getProviderSubject() {
+        return providerSubject;
     }
 
     public Instant getCreatedAt() {

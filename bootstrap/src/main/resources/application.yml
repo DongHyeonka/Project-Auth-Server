@@ -15,6 +15,33 @@ spring:
         format_sql: true
         jdbc:
           time_zone: UTC
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: ${APP_SECURITY_OAUTH2_KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/project-auth}
+        registration:
+          keycloak-google:
+            provider: keycloak
+            client-id: ${APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_ID:project-auth-server}
+            client-secret: ${APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_SECRET:project-auth-server-secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - openid
+              - profile
+              - email
+          keycloak-github:
+            provider: keycloak
+            client-id: ${APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_ID:project-auth-server}
+            client-secret: ${APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_SECRET:project-auth-server-secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - openid
+              - profile
+              - email
 
 app:
   docs:
@@ -30,6 +57,11 @@ app:
       issuer: ${APP_SECURITY_JWT_ISSUER:project-auth-server}
       secret: ${APP_SECURITY_JWT_SECRET:project-auth-server-local-jwt-secret-key-12345}
       access-token-expiration: ${APP_SECURITY_JWT_ACCESS_TOKEN_EXPIRATION:PT30M}
+    oauth2:
+      google-registration-id: ${APP_SECURITY_OAUTH2_GOOGLE_REGISTRATION_ID:keycloak-google}
+      google-idp-hint: ${APP_SECURITY_OAUTH2_GOOGLE_IDP_HINT:google}
+      github-registration-id: ${APP_SECURITY_OAUTH2_GITHUB_REGISTRATION_ID:keycloak-github}
+      github-idp-hint: ${APP_SECURITY_OAUTH2_GITHUB_IDP_HINT:github}
 
 springdoc:
   swagger-ui:

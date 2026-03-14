@@ -5,6 +5,11 @@ import com.project.auth.application.auth.login.port.in.LoginUseCase;
 import com.project.auth.application.auth.login.port.out.IssueLoginTokenPort;
 import com.project.auth.application.auth.login.port.out.LoadLoginUserPort;
 import com.project.auth.application.auth.login.port.out.PasswordVerifierPort;
+import com.project.auth.application.auth.oauth.login.OAuthLoginService;
+import com.project.auth.application.auth.oauth.login.port.in.OAuthLoginUseCase;
+import com.project.auth.application.auth.oauth.login.port.out.IssueOAuthLoginTokenPort;
+import com.project.auth.application.auth.oauth.login.port.out.LoadOAuthUserPort;
+import com.project.auth.application.auth.oauth.login.port.out.RegisterOAuthUserPort;
 import com.project.auth.application.user.signup.SignUpService;
 import com.project.auth.application.user.signup.port.in.SignUpUseCase;
 import com.project.auth.application.user.signup.port.out.PasswordHasherPort;
@@ -61,11 +66,31 @@ public class AuthCoreConfiguration {
     }
 
     @Bean
+    public IssueOAuthLoginTokenPort issueOAuthLoginTokenPort(IssueLoginTokenPort issueLoginTokenPort) {
+        return issueLoginTokenPort::issue;
+    }
+
+    @Bean
     public LoginUseCase loginUseCase(
             LoadLoginUserPort loadLoginUserPort,
             PasswordVerifierPort passwordVerifierPort,
             IssueLoginTokenPort issueLoginTokenPort
     ) {
         return new LoginService(loadLoginUserPort, passwordVerifierPort, issueLoginTokenPort);
+    }
+
+    @Bean
+    public OAuthLoginUseCase oAuthLoginUseCase(
+            LoadOAuthUserPort loadOAuthUserPort,
+            RegisterOAuthUserPort registerOAuthUserPort,
+            IssueOAuthLoginTokenPort issueOAuthLoginTokenPort,
+            Clock systemClock
+    ) {
+        return new OAuthLoginService(
+                loadOAuthUserPort,
+                registerOAuthUserPort,
+                issueOAuthLoginTokenPort,
+                systemClock
+        );
     }
 }

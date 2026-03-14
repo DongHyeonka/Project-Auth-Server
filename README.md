@@ -9,7 +9,8 @@
 - 로그인 API 및 JWT 발급 기반 구현
 - JPA 기반 사용자 영속성 어댑터 구성
 - Flyway 기반 스키마 마이그레이션 추가
-- 이후 Keycloak/OAuth 연동으로 이어질 수 있도록 클린 아키텍처 기반 구조 유지
+- Keycloak 기반 OAuth2 소셜 로그인 시작점 구성
+- Keycloak 로그인 성공 후 auth-server 내부 JWT 재발급 흐름 추가
 
 ## 모듈 구성
 
@@ -63,6 +64,7 @@
 
 - 실행 가능한 Spring Boot 모듈은 `bootstrap` 하나만 둡니다.
 - 현재 브랜치에서는 PostgreSQL + JPA + Flyway 기준으로 회원가입/로그인 흐름을 검증합니다.
+- OAuth2는 Keycloak을 OIDC 공급자로 사용하고, Google/GitHub 브로커는 `kc_idp_hint`로 분기합니다.
 - 응답은 공통 응답 형식으로 감싸서 반환합니다.
 - JWT는 auth-server가 직접 발급하고 `issuer`, `secret`, `expiration`은 설정값으로 관리합니다.
 - JPA는 `ddl-auto=validate`로만 두고, 스키마 변경은 Flyway 스크립트로 관리합니다.
@@ -71,6 +73,8 @@
 
 - 회원 도메인, 값 객체, 회원가입/로그인 유스케이스
 - 회원가입 API, 로그인 API, 공통 응답 구조
+- Keycloak Google/GitHub 소셜 로그인 진입 API
+- OAuth2 로그인 성공 후 auth-server 자체 JWT 재발급
 - JPA 사용자 엔티티, Spring Data JPA 저장소, 영속성 매퍼
 - Flyway 마이그레이션 스크립트
 - Swagger 기반 API 문서
@@ -85,6 +89,7 @@
 애플리케이션이 실행되면 기본 포트는 `8080`입니다.
 
 애플리케이션 실행 전에 대상 DB에 스키마가 반영돼 있어야 합니다.
+OAuth2 소셜 로그인까지 함께 확인하려면 Keycloak realm과 client가 먼저 준비돼 있어야 합니다.
 
 필수 DB 설정은 아래 환경 변수로 덮어쓸 수 있습니다.
 
@@ -97,6 +102,14 @@ JWT 설정은 아래 환경 변수로 덮어쓸 수 있습니다.
 - `APP_SECURITY_JWT_ISSUER`
 - `APP_SECURITY_JWT_SECRET`
 - `APP_SECURITY_JWT_ACCESS_TOKEN_EXPIRATION`
+
+Keycloak OAuth2 설정은 아래 환경 변수로 덮어쓸 수 있습니다.
+
+- `APP_SECURITY_OAUTH2_KEYCLOAK_ISSUER_URI`
+- `APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_ID`
+- `APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_SECRET`
+- `APP_SECURITY_OAUTH2_GOOGLE_IDP_HINT`
+- `APP_SECURITY_OAUTH2_GITHUB_IDP_HINT`
 
 ## Flyway 운영 기준
 
@@ -132,6 +145,13 @@ Kubernetes에서 같은 이미지를 마이그레이션 전용 Job으로 분리�
 
 현재 브랜치에서는 회원가입 API와 로그인 API를 기준으로 문서를 확인할 수 있습니다.
 
+추가로 아래 OAuth2 시작 API도 문서에서 확인할 수 있습니다.
+
+- `GET /api/v1/auth/oauth2/keycloak/google`
+- `GET /api/v1/auth/oauth2/keycloak/github`
+
+위 두 API는 Keycloak 인증 화면으로 리다이렉트되며, 인증이 완료되면 auth-server가 내부 JWT를 다시 발급한 JSON 응답을 반환합니다.
+
 ## Postman 사용 방법
 
 `docs/postman/auth-core.postman_collection.json` 파일을 Postman에 import 하면 바로 테스트할 수 있습니다.
@@ -146,6 +166,8 @@ Kubernetes에서 같은 이미지를 마이그레이션 전용 Job으로 분리�
 
 기본 변수는 `baseUrl=http://localhost:8080` 으로 설정되어 있습니다.
 
+소셜 로그인은 브라우저 리다이렉트 기반이므로 Postman보다 브라우저에서 테스트하는 편이 맞습니다.
+
 ## 테스트
 
 ```bash
@@ -156,7 +178,9 @@ Kubernetes에서 같은 이미지를 마이그레이션 전용 Job으로 분리�
 
 - 회원가입 유스케이스 단위 테스트
 - 로그인 유스케이스 단위 테스트
+- OAuth2 로그인 유스케이스 단위 테스트
 - H2 기반 사용자 영속성 통합 테스트
+- OAuth2 시작 컨트롤러 테스트
 - 로그인 컨트롤러 테스트
 - 회원가입 컨트롤러 테스트
 - Swagger OpenAPI 노출 통합 테스트

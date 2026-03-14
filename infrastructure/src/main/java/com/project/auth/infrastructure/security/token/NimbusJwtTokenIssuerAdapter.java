@@ -2,6 +2,7 @@ package com.project.auth.infrastructure.security.token;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.project.auth.application.auth.login.port.out.IssueLoginTokenPort;
+import com.project.auth.application.auth.oauth.login.port.out.IssueOAuthLoginTokenPort;
 import com.project.auth.application.auth.token.IssuedAccessToken;
 import com.project.auth.domain.user.model.User;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -19,7 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
-public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort {
+public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort, IssueOAuthLoginTokenPort {
 
     private static final String TOKEN_TYPE = "Bearer";
     private static final int MINIMUM_SECRET_BYTES = 32;

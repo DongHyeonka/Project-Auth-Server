@@ -14,6 +14,7 @@ public class UserPersistenceMapper {
                 user.getEncodedPassword(),
                 user.getName(),
                 user.getProvider(),
+                user.getProviderSubject(),
                 user.getCreatedAt()
         );
     }
@@ -25,6 +26,7 @@ public class UserPersistenceMapper {
                 userJpaEntity.getEncodedPassword(),
                 UserName.from(userJpaEntity.getName()),
                 userJpaEntity.getProvider(),
+                userJpaEntity.getProviderSubject(),
                 userJpaEntity.getCreatedAt()
         );
     }
