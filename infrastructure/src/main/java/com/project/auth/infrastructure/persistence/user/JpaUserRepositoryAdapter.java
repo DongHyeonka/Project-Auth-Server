@@ -1,8 +1,11 @@
 package com.project.auth.infrastructure.persistence.user;
 
 import com.project.auth.application.auth.login.port.out.LoadLoginUserPort;
+import com.project.auth.application.auth.oauth.login.port.out.LoadOAuthUserPort;
+import com.project.auth.application.auth.oauth.login.port.out.RegisterOAuthUserPort;
 import com.project.auth.application.user.exception.DuplicateUserEmailException;
 import com.project.auth.application.user.signup.port.out.RegisterUserPort;
+import com.project.auth.domain.user.model.AuthProvider;
 import com.project.auth.domain.user.model.User;
 import com.project.auth.domain.user.model.UserEmail;
 import com.project.auth.infrastructure.persistence.user.mapper.UserPersistenceMapper;
@@ -13,7 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Objects;
 import java.util.Optional;
 
-public class JpaUserRepositoryAdapter implements RegisterUserPort, LoadLoginUserPort {
+public class JpaUserRepositoryAdapter implements
+        RegisterUserPort,
+        LoadLoginUserPort,
+        LoadOAuthUserPort,
+        RegisterOAuthUserPort {
 
     private final UserJpaRepository userJpaRepository;
     private final UserPersistenceMapper userPersistenceMapper;
@@ -36,6 +43,13 @@ public class JpaUserRepositoryAdapter implements RegisterUserPort, LoadLoginUser
     @Transactional(readOnly = true)
     public Optional<User> findByEmail(UserEmail email) {
         return userJpaRepository.findByEmail(email.value())
+                .map(userPersistenceMapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<User> findByProviderAndProviderSubject(AuthProvider provider, String providerSubject) {
+        return userJpaRepository.findByProviderAndProviderSubject(provider, providerSubject)
                 .map(userPersistenceMapper::toDomain);
     }
 

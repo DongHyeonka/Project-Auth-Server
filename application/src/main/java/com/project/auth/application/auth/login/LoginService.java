@@ -5,11 +5,8 @@ import com.project.auth.application.auth.login.port.in.LoginUseCase;
 import com.project.auth.application.auth.login.port.out.IssueLoginTokenPort;
 import com.project.auth.application.auth.login.port.out.LoadLoginUserPort;
 import com.project.auth.application.auth.login.port.out.PasswordVerifierPort;
-import com.project.auth.application.auth.token.IssuedAccessToken;
-import com.project.auth.domain.user.exception.InvalidUserEmailException;
 import com.project.auth.domain.user.model.AuthProvider;
 import com.project.auth.domain.user.model.User;
-import com.project.auth.domain.user.model.UserEmail;
 
 import java.util.Objects;
 
@@ -37,38 +34,19 @@ public class LoginService implements LoginUseCase {
 
     @Override
     public LoginResult login(LoginCommand command) {
-        UserEmail userEmail = parseUserEmail(command.email());
-        User user = loadLoginUserPort.findByEmail(userEmail)
+        ValidatedLoginCommand validatedCommand = LoginCommandValidator.validate(command);
+
+        User user = loadLoginUserPort.findByEmail(validatedCommand.email())
                 .orElseThrow(InvalidUserCredentialsException::new);
 
         if (user.getProvider() != AuthProvider.LOCAL) {
             throw new InvalidUserCredentialsException();
         }
 
-        if (!passwordVerifierPort.matches(command.password(), user.getEncodedPassword())) {
+        if (!passwordVerifierPort.matches(validatedCommand.password(), user.getEncodedPassword())) {
             throw new InvalidUserCredentialsException();
         }
 
-        IssuedAccessToken issuedAccessToken = issueLoginTokenPort.issue(user);
-
-        return new LoginResult(
-                user.getId(),
-                user.getEmail(),
-                user.getName(),
-                user.getProvider().name(),
-                issuedAccessToken.accessToken(),
-                issuedAccessToken.tokenType(),
-                issuedAccessToken.expiresIn(),
-                issuedAccessToken.issuedAt(),
-                issuedAccessToken.expiresAt()
-        );
-    }
-
-    private UserEmail parseUserEmail(String email) {
-        try {
-            return UserEmail.from(email);
-        } catch (InvalidUserEmailException exception) {
-            throw new InvalidUserCredentialsException();
-        }
+        return LoginResult.from(user, issueLoginTokenPort.issue(user));
     }
 }
