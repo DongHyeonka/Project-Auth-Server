@@ -43,6 +43,21 @@ public final class User {
         return new User(id, email, encodedPassword, name, AuthProvider.LOCAL, createdAt);
     }
 
+    public static User restore(
+            UUID id,
+            UserEmail email,
+            String encodedPassword,
+            UserName name,
+            AuthProvider provider,
+            Instant createdAt
+    ) {
+        if (provider == AuthProvider.LOCAL) {
+            UserPasswordPolicy.validateEncoded(encodedPassword);
+        }
+
+        return new User(id, email, encodedPassword, name, provider, createdAt);
+    }
+
     public UUID getId() {
         return id;
     }

@@ -6,6 +6,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation libs.springdoc.openapi.webmvc.ui
+    compileOnly 'org.flywaydb:flyway-core'
+    compileOnly 'jakarta.persistence:jakarta.persistence-api'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation project(':domain')
+    testRuntimeOnly 'com.h2database:h2'
 }
