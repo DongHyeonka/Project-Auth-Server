@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:project-auth-server;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+app:
+  docs:
+    title: Project Auth Server API Test
+    description: 테스트용 OpenAPI 문서 설정입니다.
+    version: test
+  persistence:
+    migration:
+      run-on-startup: true
+      location: classpath:db/migration
+  security:
+    jwt:
+      issuer: project-auth-server-test
+      secret: project-auth-server-test-jwt-secret-key-12345
+      access-token-expiration: PT30M

@@ -9,7 +9,6 @@ import com.project.auth.application.user.signup.SignUpService;
 import com.project.auth.application.user.signup.port.in.SignUpUseCase;
 import com.project.auth.application.user.signup.port.out.PasswordHasherPort;
 import com.project.auth.application.user.signup.port.out.RegisterUserPort;
-import com.project.auth.infrastructure.persistence.user.InMemoryUserRepositoryAdapter;
 import com.project.auth.infrastructure.security.password.BcryptPasswordEncoderAdapter;
 import com.project.auth.infrastructure.security.token.NimbusJwtTokenIssuerAdapter;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -21,21 +20,6 @@ import java.time.Clock;
 @Configuration
 @EnableConfigurationProperties(JwtProperties.class)
 public class AuthCoreConfiguration {
-
-    @Bean
-    public InMemoryUserRepositoryAdapter inMemoryUserRepositoryAdapter() {
-        return new InMemoryUserRepositoryAdapter();
-    }
-
-    @Bean
-    public RegisterUserPort registerUserPort(InMemoryUserRepositoryAdapter inMemoryUserRepositoryAdapter) {
-        return inMemoryUserRepositoryAdapter;
-    }
-
-    @Bean
-    public LoadLoginUserPort loadLoginUserPort(InMemoryUserRepositoryAdapter inMemoryUserRepositoryAdapter) {
-        return inMemoryUserRepositoryAdapter;
-    }
 
     @Bean
     public BcryptPasswordEncoderAdapter bcryptPasswordEncoderAdapter() {

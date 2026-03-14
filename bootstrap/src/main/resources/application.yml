@@ -1,12 +1,30 @@
 spring:
   application:
     name: project-auth-server
+  datasource:
+    url: ${APP_DATASOURCE_URL:jdbc:postgresql://localhost:5432/project_auth}
+    username: ${APP_DATASOURCE_USERNAME:project_auth}
+    password: ${APP_DATASOURCE_PASSWORD:project_auth}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
 
 app:
   docs:
     title: ${APP_DOCS_TITLE:Project Auth Server API}
     description: ${APP_DOCS_DESCRIPTION:인증 서버의 OpenAPI 문서입니다.}
     version: ${APP_DOCS_VERSION:v1}
+  persistence:
+    migration:
+      run-on-startup: ${APP_PERSISTENCE_MIGRATION_RUN_ON_STARTUP:false}
+      location: ${APP_PERSISTENCE_MIGRATION_LOCATION:classpath:db/migration}
   security:
     jwt:
       issuer: ${APP_SECURITY_JWT_ISSUER:project-auth-server}
