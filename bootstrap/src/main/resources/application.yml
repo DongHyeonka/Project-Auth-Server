@@ -7,6 +7,11 @@ app:
     title: ${APP_DOCS_TITLE:Project Auth Server API}
     description: ${APP_DOCS_DESCRIPTION:인증 서버의 OpenAPI 문서입니다.}
     version: ${APP_DOCS_VERSION:v1}
+  security:
+    jwt:
+      issuer: ${APP_SECURITY_JWT_ISSUER:project-auth-server}
+      secret: ${APP_SECURITY_JWT_SECRET:project-auth-server-local-jwt-secret-key-12345}
+      access-token-expiration: ${APP_SECURITY_JWT_ACCESS_TOKEN_EXPIRATION:PT30M}
 
 springdoc:
   swagger-ui:

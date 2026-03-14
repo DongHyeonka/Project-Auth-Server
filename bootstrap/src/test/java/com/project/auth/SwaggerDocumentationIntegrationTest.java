@@ -30,6 +30,8 @@ class SwaggerDocumentationIntegrationTest {
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body()).contains("/api/v1/users/signup");
+        assertThat(response.body()).contains("/api/v1/auth/login");
         assertThat(response.body()).contains("회원가입");
+        assertThat(response.body()).contains("로그인");
     }
 }
