@@ -7,6 +7,9 @@ spring:
     username: ${APP_DATASOURCE_USERNAME}
     password: ${APP_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
   security:
     oauth2:
       client:

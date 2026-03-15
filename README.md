@@ -13,6 +13,7 @@
 - Keycloak 로그인 성공 후 auth-server 내부 JWT 재발급 흐름 추가
 - `local`, `dev`, `prod` 환경 설정 분리
 - `.env` 예시 파일과 로컬 `docker compose` 실행 기준 추가
+- auth-server 정적 로그인 페이지 추가
 
 ## 모듈 구성
 
@@ -83,6 +84,7 @@
 - Swagger 기반 API 문서
 - Postman 컬렉션 기반 수동 검증
 - PostgreSQL + Keycloak 로컬 인프라 구성
+- auth-server 로그인 페이지(`/login`)
 
 ## 환경 설정 전략
 
@@ -93,7 +95,8 @@
   - 프로파일 공통 JPA, OpenAPI, OAuth2 registration id 같은 값을 관리합니다.
 - `application-local.yml`
   - 로컬 개발용 기본값을 둡니다.
-  - `docker compose`로 띄운 PostgreSQL, Keycloak과 연결되는 값을 기본으로 사용합니다.
+  - 기본 datasource는 H2를 사용합니다.
+  - 필요하면 환경 변수로 PostgreSQL 연결값을 덮어쓸 수 있습니다.
 - `application-dev.yml`
   - 개발 환경에서 필요한 값을 환경 변수로 주입받습니다.
 - `application-prod.yml`
@@ -148,6 +151,10 @@ set +a
 
 애플리케이션 실행 전에 대상 DB와 Keycloak이 먼저 떠 있어야 합니다.
 로컬 Keycloak 설정 절차는 `docs/keycloak/LOCAL_SETUP.md` 문서를 기준으로 맞춥니다.
+
+브라우저에서 `http://localhost:8080/login` 으로 들어가면 auth-server가 직접 제공하는 로그인 페이지를 확인할 수 있습니다.
+
+로컬에서 환경 변수를 따로 주지 않으면 H2 메모리 DB 기준으로 실행됩니다. 기존 `.env.local`에 `APP_DATASOURCE_*` 값이 들어 있으면 그 값이 우선 적용되어 PostgreSQL로 연결됩니다.
 
 필수 DB 설정은 아래 환경 변수로 제어합니다.
 

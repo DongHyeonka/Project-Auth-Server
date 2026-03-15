@@ -56,6 +56,9 @@ public class OAuth2SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
+                                "/",
+                                "/login",
+                                "/auth-login.html",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
@@ -68,6 +71,7 @@ public class OAuth2SecurityConfiguration {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/login")
                         .authorizationEndpoint(authorization -> authorization
                                 .authorizationRequestResolver(keycloakIdpHintAuthorizationRequestResolver)
                         )

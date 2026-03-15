@@ -10,6 +10,7 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
 
@@ -27,6 +28,7 @@ public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
     ) throws IOException {
         response.setStatus(AuthErrorCode.OAUTH_LOGIN_FAILED.status());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         objectMapper.writeValue(
                 response.getWriter(),
                 ApiResult.failure(AuthErrorCode.OAUTH_LOGIN_FAILED.code(), AuthErrorCode.OAUTH_LOGIN_FAILED.message())
