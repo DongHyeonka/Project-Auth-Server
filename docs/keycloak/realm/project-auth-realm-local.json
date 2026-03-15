@@ -1,0 +1,31 @@
+{
+  "realm": "project-auth",
+  "enabled": true,
+  "displayName": "Project Auth",
+  "sslRequired": "NONE",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "clients": [
+    {
+      "clientId": "project-auth-server",
+      "name": "project-auth-server",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "project-auth-server-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "baseUrl": "http://localhost:8080",
+      "redirectUris": [
+        "http://localhost:8080/login/oauth2/code/keycloak-google",
+        "http://localhost:8080/login/oauth2/code/keycloak-github"
+      ],
+      "webOrigins": [
+        "http://localhost:8080"
+      ]
+    }
+  ]
+}

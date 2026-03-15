@@ -11,6 +11,8 @@
 - Flyway 기반 스키마 마이그레이션 추가
 - Keycloak 기반 OAuth2 소셜 로그인 시작점 구성
 - Keycloak 로그인 성공 후 auth-server 내부 JWT 재발급 흐름 추가
+- `local`, `dev`, `prod` 환경 설정 분리
+- `.env` 예시 파일과 로컬 `docker compose` 실행 기준 추가
 
 ## 모듈 구성
 
@@ -68,6 +70,7 @@
 - 응답은 공통 응답 형식으로 감싸서 반환합니다.
 - JWT는 auth-server가 직접 발급하고 `issuer`, `secret`, `expiration`은 설정값으로 관리합니다.
 - JPA는 `ddl-auto=validate`로만 두고, 스키마 변경은 Flyway 스크립트로 관리합니다.
+- 실행 설정 파일은 `bootstrap` 모듈에 두고, 실제 값은 프로파일별 yml과 환경 변수로 분리합니다.
 
 ## 현재 브랜치에서 확인할 수 있는 기능
 
@@ -79,19 +82,74 @@
 - Flyway 마이그레이션 스크립트
 - Swagger 기반 API 문서
 - Postman 컬렉션 기반 수동 검증
+- PostgreSQL + Keycloak 로컬 인프라 구성
+
+## 환경 설정 전략
+
+프로파일은 `local`, `dev`, `prod`로 분리합니다.
+
+- `application.yml`
+  - 공통 설정만 둡니다.
+  - 프로파일 공통 JPA, OpenAPI, OAuth2 registration id 같은 값을 관리합니다.
+- `application-local.yml`
+  - 로컬 개발용 기본값을 둡니다.
+  - `docker compose`로 띄운 PostgreSQL, Keycloak과 연결되는 값을 기본으로 사용합니다.
+- `application-dev.yml`
+  - 개발 환경에서 필요한 값을 환경 변수로 주입받습니다.
+- `application-prod.yml`
+  - 운영 환경에서 필요한 값을 환경 변수로 주입받습니다.
+
+`.env` 파일은 Spring Boot가 직접 읽는 파일이라기보다, 로컬 셸이나 `docker compose`, IDE 실행 설정이 환경 변수로 주입할 수 있도록 돕는 예시 파일로 사용합니다.
+
+- `.env.local.example`
+- `.env.dev.example`
+- `.env.prod.example`
+
+실제 실행 파일은 Git에 올리지 않고, 예시 파일을 복사해 `.env.local`, `.env.dev`, `.env.prod`로 사용합니다.
+
+## 로컬 인프라
+
+로컬에서는 루트의 `docker-compose.yml`로 PostgreSQL과 Keycloak을 함께 띄웁니다.
+
+- PostgreSQL
+  - auth-server용 DB: `project_auth`
+  - Keycloak용 DB: `keycloak`
+- Keycloak
+  - PostgreSQL을 외부 DB로 사용합니다.
+  - 로컬 realm import 파일은 `docs/keycloak/realm/project-auth-realm-local.json`에 둡니다.
+
+같은 PostgreSQL 인스턴스를 쓰더라도 auth-server와 Keycloak은 DB를 분리합니다. 애플리케이션 테이블과 Keycloak 관리 테이블을 한 DB에 섞지 않는 것을 기본 기준으로 잡습니다.
 
 ## 실행 방법
 
+먼저 예시 env 파일을 복사합니다.
+
 ```bash
+cp .env.local.example .env.local
+```
+
+다음으로 로컬 인프라를 실행합니다.
+
+```bash
+docker compose --env-file .env.local up -d
+```
+
+이후 현재 셸에 환경 변수를 올린 뒤 애플리케이션을 실행합니다.
+
+```bash
+set -a
+source .env.local
+set +a
+
 ./gradlew :bootstrap:bootRun
 ```
 
 애플리케이션이 실행되면 기본 포트는 `8080`입니다.
 
-애플리케이션 실행 전에 대상 DB에 스키마가 반영돼 있어야 합니다.
-OAuth2 소셜 로그인까지 함께 확인하려면 Keycloak realm과 client가 먼저 준비돼 있어야 합니다.
+애플리케이션 실행 전에 대상 DB와 Keycloak이 먼저 떠 있어야 합니다.
+로컬 Keycloak 설정 절차는 `docs/keycloak/LOCAL_SETUP.md` 문서를 기준으로 맞춥니다.
 
-필수 DB 설정은 아래 환경 변수로 덮어쓸 수 있습니다.
+필수 DB 설정은 아래 환경 변수로 제어합니다.
 
 - `APP_DATASOURCE_URL`
 - `APP_DATASOURCE_USERNAME`
@@ -103,13 +161,23 @@ JWT 설정은 아래 환경 변수로 덮어쓸 수 있습니다.
 - `APP_SECURITY_JWT_SECRET`
 - `APP_SECURITY_JWT_ACCESS_TOKEN_EXPIRATION`
 
-Keycloak OAuth2 설정은 아래 환경 변수로 덮어쓸 수 있습니다.
+Keycloak OAuth2 설정은 아래 환경 변수로 제어합니다.
 
 - `APP_SECURITY_OAUTH2_KEYCLOAK_ISSUER_URI`
 - `APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_ID`
 - `APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_SECRET`
 - `APP_SECURITY_OAUTH2_GOOGLE_IDP_HINT`
 - `APP_SECURITY_OAUTH2_GITHUB_IDP_HINT`
+
+로컬 인프라용 환경 변수는 아래 파일에서 함께 관리합니다.
+
+- `.env.local`
+  - auth-server 로컬 실행
+  - `docker compose` 로컬 인프라 실행
+- `.env.dev`
+  - 개발 환경 예시
+- `.env.prod`
+  - 운영 환경 예시
 
 ## Flyway 운영 기준
 
@@ -137,6 +205,28 @@ SPRING_MAIN_WEB_APPLICATION_TYPE=none \
 이 방식은 “앱 서버가 뜰 때마다 Flyway를 돈다”가 아니라, “DB에 대해 한 번만 실행하는 마이그레이션 프로세스”를 따로 두는 운영 형태를 연습하기 위한 기준입니다.
 
 Kubernetes에서 같은 이미지를 마이그레이션 전용 Job으로 분리하는 예시는 `docs/k8s/auth-db-migration-job.yaml` 파일을 참고하면 됩니다.
+
+## Keycloak 설정 기준
+
+auth-server는 Google/GitHub와 직접 연결하지 않고 Keycloak과만 연결합니다. 따라서 소셜 로그인용 Client ID와 Secret은 Keycloak에 등록해야 합니다.
+
+- auth-server에 넣는 값
+  - Keycloak realm issuer
+  - Keycloak client id
+  - Keycloak client secret
+- Keycloak에 넣는 값
+  - Google OAuth Client ID / Secret
+  - GitHub OAuth App Client ID / Secret
+
+현재 로컬 기준으로 auth-server는 아래 Keycloak 설정을 기대합니다.
+
+- realm: `project-auth`
+- client id: `project-auth-server`
+- client secret: `project-auth-server-secret`
+- Google provider alias: `google`
+- GitHub provider alias: `github`
+
+자세한 순서는 `docs/keycloak/LOCAL_SETUP.md`를 참고하면 됩니다.
 
 ## API 문서
 
