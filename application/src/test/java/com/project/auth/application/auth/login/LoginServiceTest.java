@@ -34,6 +34,7 @@ class LoginServiceTest {
             }
         };
         IssueLoginTokenPort issueLoginTokenPort = user -> new IssuedAccessToken(
+                "project-auth-server",
                 "issued-access-token",
                 "Bearer",
                 1800L,
@@ -49,6 +50,7 @@ class LoginServiceTest {
         LoginResult result = loginService.login(new LoginCommand("tester@example.com", "password123"));
 
         assertThat(result.email()).isEqualTo("tester@example.com");
+        assertThat(result.issuer()).isEqualTo("project-auth-server");
         assertThat(result.accessToken()).isEqualTo("issued-access-token");
         assertThat(result.tokenType()).isEqualTo("Bearer");
         assertThat(result.expiresIn()).isEqualTo(1800L);

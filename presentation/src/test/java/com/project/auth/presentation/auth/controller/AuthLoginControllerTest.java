@@ -22,6 +22,7 @@ class AuthLoginControllerTest {
                 command.email(),
                 "테스터",
                 "LOCAL",
+                "project-auth-server",
                 "issued-access-token",
                 "Bearer",
                 1800L,
@@ -38,6 +39,8 @@ class AuthLoginControllerTest {
         assertThat(response.getBody().success()).isTrue();
         assertThat(response.getBody().code()).isEqualTo(SuccessCode.AUTH_LOGIN_SUCCEEDED.code());
         assertThat(response.getBody().data()).isNotNull();
-        assertThat(response.getBody().data().accessToken()).isEqualTo("issued-access-token");
+        assertThat(response.getBody().data().user().email()).isEqualTo("tester@example.com");
+        assertThat(response.getBody().data().token().issuer()).isEqualTo("project-auth-server");
+        assertThat(response.getBody().data().token().accessToken()).isEqualTo("issued-access-token");
     }
 }

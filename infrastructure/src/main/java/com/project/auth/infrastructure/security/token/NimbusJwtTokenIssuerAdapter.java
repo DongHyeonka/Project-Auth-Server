@@ -65,6 +65,7 @@ public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort, IssueOA
         ).getTokenValue();
 
         return new IssuedAccessToken(
+                issuer,
                 tokenValue,
                 TOKEN_TYPE,
                 accessTokenExpiration.getSeconds(),

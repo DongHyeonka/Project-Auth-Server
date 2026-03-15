@@ -31,6 +31,7 @@ class OAuthLoginServiceTest {
     void setUp() {
         FakeOAuthUserStore fakeOAuthUserStore = new FakeOAuthUserStore();
         IssueOAuthLoginTokenPort issueOAuthLoginTokenPort = user -> new IssuedAccessToken(
+                "project-auth-server",
                 "oauth-access-token",
                 "Bearer",
                 1800L,
@@ -50,7 +51,7 @@ class OAuthLoginServiceTest {
     @Test
     void loginRegistersNewGoogleUserAndIssuesInternalToken() {
         LoginResult result = oAuthLoginService.login(new OAuthLoginCommand(
-                AuthProvider.GOOGLE,
+                "GOOGLE",
                 "google-subject-001",
                 "google-user@example.com",
                 "구글유저"
@@ -64,14 +65,14 @@ class OAuthLoginServiceTest {
     @Test
     void loginReturnsExistingOAuthUserWhenProviderSubjectMatches() {
         LoginResult firstLogin = oAuthLoginService.login(new OAuthLoginCommand(
-                AuthProvider.GITHUB,
+                "GITHUB",
                 "github-subject-001",
                 "github-user@example.com",
                 "깃허브유저"
         ));
 
         LoginResult secondLogin = oAuthLoginService.login(new OAuthLoginCommand(
-                AuthProvider.GITHUB,
+                "GITHUB",
                 "github-subject-001",
                 "github-user@example.com",
                 "깃허브유저"
@@ -84,14 +85,14 @@ class OAuthLoginServiceTest {
     @Test
     void loginRejectsDuplicateEmailOwnedByAnotherAccount() {
         oAuthLoginService.login(new OAuthLoginCommand(
-                AuthProvider.GOOGLE,
+                "GOOGLE",
                 "google-subject-001",
                 "duplicate@example.com",
                 "구글유저"
         ));
 
         assertThatThrownBy(() -> oAuthLoginService.login(new OAuthLoginCommand(
-                AuthProvider.GITHUB,
+                "GITHUB",
                 "github-subject-001",
                 "duplicate@example.com",
                 "깃허브유저"
@@ -101,7 +102,7 @@ class OAuthLoginServiceTest {
     @Test
     void loginRejectsInvalidOAuthUserInfo() {
         assertThatThrownBy(() -> oAuthLoginService.login(new OAuthLoginCommand(
-                AuthProvider.GOOGLE,
+                "GOOGLE",
                 "",
                 "not-an-email",
                 "A"
