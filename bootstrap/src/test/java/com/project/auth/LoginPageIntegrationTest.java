@@ -31,6 +31,7 @@ class LoginPageIntegrationTest {
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body()).contains("로그인은 이 서버에서 시작됩니다.");
         assertThat(response.body()).contains("/api/v1/auth/login");
+        assertThat(response.body()).contains("/api/v1/users/signup");
         assertThat(response.body()).contains("/api/v1/auth/oauth2/keycloak/google");
         assertThat(response.body()).contains("/api/v1/auth/oauth2/keycloak/github");
     }

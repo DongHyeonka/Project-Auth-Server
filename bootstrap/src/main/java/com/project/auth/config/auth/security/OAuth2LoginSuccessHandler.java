@@ -1,45 +1,26 @@
 package com.project.auth.config.auth.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.auth.application.auth.exception.UnsupportedOAuthProviderException;
-import com.project.auth.application.auth.login.LoginResult;
-import com.project.auth.application.auth.oauth.login.OAuthLoginCommand;
-import com.project.auth.application.auth.oauth.login.port.in.OAuthLoginUseCase;
-import com.project.auth.application.support.code.SuccessCode;
-import com.project.auth.application.support.exception.BusinessException;
-import com.project.auth.common.response.ApiResult;
 import com.project.auth.config.auth.OAuth2LoginProperties;
-import com.project.auth.domain.user.model.AuthProvider;
-import com.project.auth.presentation.auth.dto.LoginResponse;
-import com.project.auth.presentation.auth.mapper.AuthPresentationMapper;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private final OAuthLoginUseCase oAuthLoginUseCase;
-    private final AuthPresentationMapper authPresentationMapper;
-    private final OAuth2LoginProperties oAuth2LoginProperties;
-    private final ObjectMapper objectMapper;
+    private static final String OAUTH_LOGIN_COMPLETION_PATH = "/api/v1/auth/oauth2/complete";
 
-    public OAuth2LoginSuccessHandler(
-            OAuthLoginUseCase oAuthLoginUseCase,
-            AuthPresentationMapper authPresentationMapper,
-            OAuth2LoginProperties oAuth2LoginProperties,
-            ObjectMapper objectMapper
-    ) {
-        this.oAuthLoginUseCase = oAuthLoginUseCase;
-        this.authPresentationMapper = authPresentationMapper;
+    private final OAuth2LoginProperties oAuth2LoginProperties;
+
+    public OAuth2LoginSuccessHandler(OAuth2LoginProperties oAuth2LoginProperties) {
         this.oAuth2LoginProperties = oAuth2LoginProperties;
-        this.objectMapper = objectMapper;
+        setAlwaysUseDefaultTargetUrl(true);
     }
 
     @Override
@@ -47,68 +28,27 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             HttpServletRequest request,
             HttpServletResponse response,
             Authentication authentication
-    ) throws IOException {
-        try {
-            OAuth2AuthenticationToken authenticationToken = (OAuth2AuthenticationToken) authentication;
-            OidcUser oidcUser = (OidcUser) authenticationToken.getPrincipal();
-
-            OAuthLoginCommand command = new OAuthLoginCommand(
-                    resolveProvider(authenticationToken.getAuthorizedClientRegistrationId()),
-                    oidcUser.getSubject(),
-                    oidcUser.getEmail(),
-                    resolveUserName(oidcUser)
-            );
-
-            LoginResult loginResult = oAuthLoginUseCase.login(command);
-            LoginResponse loginResponse = authPresentationMapper.toResponse(loginResult);
-
-            response.setStatus(HttpServletResponse.SC_OK);
-            configureJsonResponse(response);
-            objectMapper.writeValue(
-                    response.getWriter(),
-                    ApiResult.success(
-                            SuccessCode.AUTH_LOGIN_SUCCEEDED.code(),
-                            SuccessCode.AUTH_LOGIN_SUCCEEDED.message(),
-                            loginResponse
-                    )
-            );
-            clearAuthenticationAttributes(request);
-        } catch (BusinessException exception) {
-            response.setStatus(exception.getErrorCode().status());
-            configureJsonResponse(response);
-            objectMapper.writeValue(
-                    response.getWriter(),
-                    ApiResult.failure(exception.getErrorCode().code(), exception.getMessage())
-            );
-        }
+    ) throws IOException, ServletException {
+        OAuth2AuthenticationToken authenticationToken = (OAuth2AuthenticationToken) authentication;
+        setDefaultTargetUrl(
+                UriComponentsBuilder.fromPath(OAUTH_LOGIN_COMPLETION_PATH)
+                        .queryParam("provider", resolveProvider(authenticationToken.getAuthorizedClientRegistrationId()))
+                        .build()
+                        .toUriString()
+        );
+        clearAuthenticationAttributes(request);
+        super.onAuthenticationSuccess(request, response, authentication);
     }
 
-    private AuthProvider resolveProvider(String registrationId) {
+    private String resolveProvider(String registrationId) {
         if (oAuth2LoginProperties.googleRegistrationId().equals(registrationId)) {
-            return AuthProvider.GOOGLE;
+            return "GOOGLE";
         }
 
         if (oAuth2LoginProperties.githubRegistrationId().equals(registrationId)) {
-            return AuthProvider.GITHUB;
+            return "GITHUB";
         }
 
         throw new UnsupportedOAuthProviderException();
-    }
-
-    private String resolveUserName(OidcUser oidcUser) {
-        if (oidcUser.getFullName() != null && !oidcUser.getFullName().isBlank()) {
-            return oidcUser.getFullName();
-        }
-
-        if (oidcUser.getPreferredUsername() != null && !oidcUser.getPreferredUsername().isBlank()) {
-            return oidcUser.getPreferredUsername();
-        }
-
-        return oidcUser.getEmail();
-    }
-
-    private void configureJsonResponse(HttpServletResponse response) {
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
     }
 }

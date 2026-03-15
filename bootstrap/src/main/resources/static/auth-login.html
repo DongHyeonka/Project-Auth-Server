@@ -600,6 +600,13 @@
             box-shadow: 0 18px 30px rgba(78, 197, 214, 0.2);
         }
 
+        .secondary-action {
+            color: var(--ink);
+            background: rgba(255, 255, 255, 0.74);
+            border: 1px solid rgba(255, 255, 255, 0.82);
+            box-shadow: 0 12px 22px rgba(111, 141, 184, 0.1);
+        }
+
         .separator {
             display: grid;
             grid-template-columns: 1fr auto 1fr;
@@ -955,6 +962,29 @@
                     </form>
                 </section>
 
+                <section class="section">
+                    <div class="section-head">
+                        <strong>Create local account</strong>
+                        <span>POST /api/v1/users/signup</span>
+                    </div>
+
+                    <form id="signup-form">
+                        <label>
+                            이름
+                            <input id="signup-name" name="name" type="text" placeholder="테스터" value="테스터" required>
+                        </label>
+                        <label>
+                            이메일
+                            <input id="signup-email" name="email" type="email" placeholder="tester@example.com" value="tester@example.com" required>
+                        </label>
+                        <label>
+                            비밀번호
+                            <input id="signup-password" name="password" type="password" placeholder="password123" value="password123" required>
+                        </label>
+                        <button class="secondary-action" type="submit">회원가입 후 로그인 입력값 채우기</button>
+                    </form>
+                </section>
+
                 <div class="separator">Federated sign-in</div>
 
                 <section class="section">
@@ -1002,13 +1032,14 @@
 
 <script>
     const form = document.getElementById('login-form');
+    const signUpForm = document.getElementById('signup-form');
     const resultBox = document.getElementById('result');
     const resultStatus = document.getElementById('result-status');
     const resultBody = document.getElementById('result-body');
 
-    function showResult(type, payload) {
+    function showResult(type, title, payload) {
         resultBox.classList.remove('hidden');
-        resultStatus.textContent = type === 'success' ? 'Login Succeeded' : 'Login Failed';
+        resultStatus.textContent = title;
         resultStatus.className = `result-title ${type}`;
         resultBody.textContent = JSON.stringify(payload, null, 2);
     }
@@ -1029,10 +1060,50 @@
             });
 
             const body = await response.json();
-            showResult(response.ok ? 'success' : 'error', body);
+            showResult(
+                response.ok ? 'success' : 'error',
+                response.ok ? 'Login Succeeded' : 'Login Failed',
+                body
+            );
         } catch (error) {
-            showResult('error', {
+            showResult('error', 'Login Failed', {
                 message: '로그인 요청 중 네트워크 오류가 발생했습니다.',
+                detail: String(error)
+            });
+        }
+    });
+
+    signUpForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const name = document.getElementById('signup-name').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+
+        try {
+            const response = await fetch('/api/v1/users/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, email, password })
+            });
+
+            const body = await response.json();
+
+            if (response.ok) {
+                document.getElementById('email').value = email;
+                document.getElementById('password').value = password;
+            }
+
+            showResult(
+                response.ok ? 'success' : 'error',
+                response.ok ? 'Sign Up Succeeded' : 'Sign Up Failed',
+                body
+            );
+        } catch (error) {
+            showResult('error', 'Sign Up Failed', {
+                message: '회원가입 요청 중 네트워크 오류가 발생했습니다.',
                 detail: String(error)
             });
         }

@@ -21,12 +21,21 @@ final class OAuthLoginCommandValidator {
         );
     }
 
-    private static AuthProvider validateProvider(AuthProvider provider) {
-        if (provider == null || provider == AuthProvider.LOCAL) {
+    private static AuthProvider validateProvider(String provider) {
+        if (provider == null || provider.isBlank()) {
             throw new InvalidOAuthUserInfoException();
         }
 
-        return provider;
+        try {
+            AuthProvider parsedProvider = AuthProvider.valueOf(provider.trim().toUpperCase());
+            if (parsedProvider == AuthProvider.LOCAL) {
+                throw new InvalidOAuthUserInfoException();
+            }
+
+            return parsedProvider;
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidOAuthUserInfoException();
+        }
     }
 
     private static String validateProviderSubject(String providerSubject) {

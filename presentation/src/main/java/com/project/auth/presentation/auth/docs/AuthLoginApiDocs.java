@@ -31,15 +31,20 @@ public interface AuthLoginApiDocs {
                                               "code": "AUTH_LOGIN_SUCCEEDED",
                                               "message": "로그인이 완료되었습니다.",
                                               "data": {
-                                                "userId": "11111111-1111-1111-1111-111111111111",
-                                                "email": "tester@example.com",
-                                                "name": "테스터",
-                                                "provider": "LOCAL",
-                                                "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-                                                "tokenType": "Bearer",
-                                                "expiresIn": 1800,
-                                                "issuedAt": "2026-03-14T00:00:00Z",
-                                                "expiresAt": "2026-03-14T00:30:00Z"
+                                                "user": {
+                                                  "userId": "11111111-1111-1111-1111-111111111111",
+                                                  "email": "tester@example.com",
+                                                  "name": "테스터",
+                                                  "provider": "LOCAL"
+                                                },
+                                                "token": {
+                                                  "issuer": "project-auth-server",
+                                                  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+                                                  "tokenType": "Bearer",
+                                                  "expiresIn": 1800,
+                                                  "issuedAt": "2026-03-14T00:00:00Z",
+                                                  "expiresAt": "2026-03-14T00:30:00Z"
+                                                }
                                               }
                                             }
                                             """

@@ -1,11 +1,9 @@
 package com.project.auth.config.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.auth.application.auth.oauth.login.port.in.OAuthLoginUseCase;
 import com.project.auth.config.auth.security.KeycloakIdpHintAuthorizationRequestResolver;
 import com.project.auth.config.auth.security.OAuth2LoginFailureHandler;
 import com.project.auth.config.auth.security.OAuth2LoginSuccessHandler;
-import com.project.auth.presentation.auth.mapper.AuthPresentationMapper;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,18 +16,8 @@ import org.springframework.security.web.SecurityFilterChain;
 public class OAuth2SecurityConfiguration {
 
     @Bean
-    public OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler(
-            OAuthLoginUseCase oAuthLoginUseCase,
-            AuthPresentationMapper authPresentationMapper,
-            OAuth2LoginProperties oAuth2LoginProperties,
-            ObjectMapper objectMapper
-    ) {
-        return new OAuth2LoginSuccessHandler(
-                oAuthLoginUseCase,
-                authPresentationMapper,
-                oAuth2LoginProperties,
-                objectMapper
-        );
+    public OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler(OAuth2LoginProperties oAuth2LoginProperties) {
+        return new OAuth2LoginSuccessHandler(oAuth2LoginProperties);
     }
 
     @Bean
@@ -64,7 +52,7 @@ public class OAuth2SecurityConfiguration {
                                 "/v3/api-docs/**",
                                 "/api/v1/users/signup",
                                 "/api/v1/auth/login",
-                                "/api/v1/auth/oauth2/**",
+                                "/api/v1/auth/oauth2/keycloak/**",
                                 "/oauth2/authorization/**",
                                 "/login/oauth2/code/**"
                         ).permitAll()
