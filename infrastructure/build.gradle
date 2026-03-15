@@ -6,5 +6,4 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
     implementation 'org.springframework.security:spring-security-crypto'
     implementation 'org.springframework.security:spring-security-oauth2-jose'
-    runtimeOnly 'org.postgresql:postgresql'
 }

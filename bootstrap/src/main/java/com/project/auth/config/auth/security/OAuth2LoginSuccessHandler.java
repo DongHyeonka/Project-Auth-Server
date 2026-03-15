@@ -21,6 +21,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
@@ -62,7 +63,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             LoginResponse loginResponse = authPresentationMapper.toResponse(loginResult);
 
             response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            configureJsonResponse(response);
             objectMapper.writeValue(
                     response.getWriter(),
                     ApiResult.success(
@@ -74,7 +75,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             clearAuthenticationAttributes(request);
         } catch (BusinessException exception) {
             response.setStatus(exception.getErrorCode().status());
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            configureJsonResponse(response);
             objectMapper.writeValue(
                     response.getWriter(),
                     ApiResult.failure(exception.getErrorCode().code(), exception.getMessage())
@@ -104,5 +105,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         }
 
         return oidcUser.getEmail();
+    }
+
+    private void configureJsonResponse(HttpServletResponse response) {
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
     }
 }
