@@ -162,11 +162,15 @@ set +a
 JWT 설정은 아래 환경 변수로 덮어쓸 수 있습니다.
 
 - `APP_SECURITY_JWT_ISSUER`
-- `APP_SECURITY_JWT_KEY_ID`
-- `APP_SECURITY_JWT_PUBLIC_KEY`
-- `APP_SECURITY_JWT_PRIVATE_KEY`
+- `APP_SECURITY_JWT_ACTIVE_KEY_ID`
 - `APP_SECURITY_JWT_GENERATE_KEY_PAIR_ON_STARTUP`
 - `APP_SECURITY_JWT_ACCESS_TOKEN_EXPIRATION`
+- `APP_SECURITY_JWT_KEYS_0_KEY_ID`
+- `APP_SECURITY_JWT_KEYS_0_PUBLIC_KEY`
+- `APP_SECURITY_JWT_KEYS_0_PRIVATE_KEY`
+- `APP_SECURITY_JWT_KEYS_1_KEY_ID`
+- `APP_SECURITY_JWT_KEYS_1_PUBLIC_KEY`
+- `APP_SECURITY_JWT_KEYS_1_PRIVATE_KEY`
 
 Keycloak OAuth2 설정은 아래 환경 변수로 제어합니다.
 
@@ -251,13 +255,15 @@ auth-server는 Google/GitHub와 직접 연결하지 않고 Keycloak과만 연결
 
 ## JWT 공개키 검증 기준
 
-이 브랜치부터 auth-server는 대칭키가 아니라 RS256으로 JWT를 발급합니다.
+이 브랜치부터 auth-server는 대칭키가 아니라 RS256으로 JWT를 발급합니다. 그리고 키 회전을 위해 “현재 서명 키”와 “이전 검증 키”를 함께 관리할 수 있게 구성합니다.
 
 - 로컬
   - 공개키/개인키를 따로 주지 않으면 시작 시 임시 RSA 키 쌍을 생성합니다.
   - 따라서 재시작 전후 토큰이 계속 유효해야 하는 상황이면 `.env.local`에 키를 직접 넣어야 합니다.
 - `dev`, `prod`
-  - `APP_SECURITY_JWT_PUBLIC_KEY`, `APP_SECURITY_JWT_PRIVATE_KEY`를 환경 변수로 명시합니다.
+  - `APP_SECURITY_JWT_ACTIVE_KEY_ID`로 현재 서명 키를 지정합니다.
+  - `APP_SECURITY_JWT_KEYS_N_*` 묶음으로 현재 키와 이전 키를 함께 넣습니다.
+  - 현재 활성 키는 private/public key를 모두 가져야 하고, 이전 키는 public key만 있어도 됩니다.
   - `APP_SECURITY_JWT_GENERATE_KEY_PAIR_ON_STARTUP=false`를 유지합니다.
 
 공개 메타데이터는 아래 엔드포인트로 노출합니다.
@@ -294,7 +300,21 @@ base64 -w 0 private_key.pem
 base64 -w 0 public_key.pem
 ```
 
-`APP_SECURITY_JWT_PRIVATE_KEY`에는 private key, `APP_SECURITY_JWT_PUBLIC_KEY`에는 public key를 넣고, `APP_SECURITY_JWT_KEY_ID`는 키 버전을 식별할 수 있는 값으로 맞춥니다.
+활성 키는 `APP_SECURITY_JWT_ACTIVE_KEY_ID`로 고르고, 각 키의 material은 `APP_SECURITY_JWT_KEYS_N_PUBLIC_KEY`, `APP_SECURITY_JWT_KEYS_N_PRIVATE_KEY`로 넣습니다. 이전 키는 검증 전용이므로 private key 없이 public key만 남겨둘 수 있습니다.
+
+예를 들어 키를 회전하는 시점에는 이런 식으로 운영합니다.
+
+- `APP_SECURITY_JWT_ACTIVE_KEY_ID=auth-rsa-2`
+- `APP_SECURITY_JWT_KEYS_0_KEY_ID=auth-rsa-1`
+- `APP_SECURITY_JWT_KEYS_0_PUBLIC_KEY=...`
+- `APP_SECURITY_JWT_KEYS_0_PRIVATE_KEY=` 비워둠
+- `APP_SECURITY_JWT_KEYS_1_KEY_ID=auth-rsa-2`
+- `APP_SECURITY_JWT_KEYS_1_PUBLIC_KEY=...`
+- `APP_SECURITY_JWT_KEYS_1_PRIVATE_KEY=...`
+
+이 상태에서는 새 토큰은 `auth-rsa-2`로 발급하고, 기존 `auth-rsa-1`로 서명된 토큰은 만료될 때까지 계속 검증할 수 있습니다.
+
+현재 구현은 `ConfiguredJwtSigningKeySource`가 환경 변수 기반으로 키를 읽습니다. 이후 Secret 관리가 더 고도화되면 같은 `JwtSigningKeySource` 인터페이스를 구현하는 방식으로 Vault, AWS KMS, GCP KMS, HSM 연동으로 확장할 수 있습니다. 즉 이번 브랜치에서는 KMS/HSM 자체를 붙이기보다, 그 방향으로 갈 수 있도록 키 소스를 분리해 둔 상태입니다.
 
 ## Postman 사용 방법
 

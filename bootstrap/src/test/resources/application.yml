@@ -52,9 +52,7 @@ app:
   security:
     jwt:
       issuer: http://localhost:8080
-      key-id: test-rsa-key-1
-      public-key:
-      private-key:
+      active-key-id: test-rsa-key-1
       generate-key-pair-on-startup: true
       access-token-expiration: PT30M
     oauth2:
