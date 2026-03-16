@@ -5,7 +5,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 
 public record JwtSigningKeyMaterial(
         String activeKeyId,
-        RSAKey activePrivateJwk,
+        RSAKey activePublicJwk,
         JWKSet publicJwkSet
 ) {
 }

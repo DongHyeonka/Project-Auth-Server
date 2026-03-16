@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -24,18 +25,31 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
+@ConditionalOnProperty(prefix = "app.security.jwt.vault", name = "enabled", havingValue = "false", matchIfMissing = true)
 public class ConfiguredJwtSigningKeySource implements JwtSigningKeySource {
 
     private static final int RSA_KEY_SIZE = 2048;
 
-    private final JwtProperties jwtProperties;
+    private final ResolvedJwtKeyMaterial resolvedJwtKeyMaterial;
 
     public ConfiguredJwtSigningKeySource(JwtProperties jwtProperties) {
-        this.jwtProperties = jwtProperties;
+        this.resolvedJwtKeyMaterial = resolveKeyMaterial(jwtProperties);
     }
 
     @Override
     public JwtSigningKeyMaterial load() {
+        return new JwtSigningKeyMaterial(
+                resolvedJwtKeyMaterial.activeKeyId(),
+                resolvedJwtKeyMaterial.activePublicJwk(),
+                resolvedJwtKeyMaterial.publicJwkSet()
+        );
+    }
+
+    public RSAKey activeSigningKey() {
+        return resolvedJwtKeyMaterial.activePrivateJwk();
+    }
+
+    private ResolvedJwtKeyMaterial resolveKeyMaterial(JwtProperties jwtProperties) {
         if (jwtProperties.keys().isEmpty() && jwtProperties.generateKeyPairOnStartup()) {
             return generateSingleLocalKeyMaterial(jwtProperties.activeKeyId());
         }
@@ -57,23 +71,25 @@ public class ConfiguredJwtSigningKeySource implements JwtSigningKeySource {
                 .map(key -> (JWK) key.toPublicJWK())
                 .toList();
 
-        return new JwtSigningKeyMaterial(
+        return new ResolvedJwtKeyMaterial(
                 jwtProperties.activeKeyId(),
                 activeKey,
+                (RSAKey) activeKey.toPublicJWK(),
                 new JWKSet(publicKeys)
         );
     }
 
-    private JwtSigningKeyMaterial generateSingleLocalKeyMaterial(String activeKeyId) {
+    private ResolvedJwtKeyMaterial generateSingleLocalKeyMaterial(String activeKeyId) {
         KeyPair keyPair = generateKeyPair();
         RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
         RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
 
         RSAKey activeKey = buildRsaKey(publicKey, privateKey, activeKeyId);
 
-        return new JwtSigningKeyMaterial(
+        return new ResolvedJwtKeyMaterial(
                 activeKeyId,
                 activeKey,
+                (RSAKey) activeKey.toPublicJWK(),
                 new JWKSet(activeKey.toPublicJWK())
         );
     }
@@ -135,5 +151,13 @@ public class ConfiguredJwtSigningKeySource implements JwtSigningKeySource {
                 .replaceAll("\\s", "");
 
         return Base64.getDecoder().decode(normalized);
+    }
+
+    private record ResolvedJwtKeyMaterial(
+            String activeKeyId,
+            RSAKey activePrivateJwk,
+            RSAKey activePublicJwk,
+            JWKSet publicJwkSet
+    ) {
     }
 }

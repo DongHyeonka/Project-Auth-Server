@@ -1,14 +1,16 @@
 package com.project.auth.infrastructure.security.token;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.project.auth.application.auth.login.port.out.IssueLoginTokenPort;
 import com.project.auth.application.auth.oauth.login.port.out.IssueOAuthLoginTokenPort;
 import com.project.auth.application.auth.token.IssuedAccessToken;
 import com.project.auth.domain.user.model.User;
-import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.security.oauth2.jwt.JwsHeader;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -18,8 +20,9 @@ import java.util.Objects;
 public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort, IssueOAuthLoginTokenPort {
 
     private static final String TOKEN_TYPE = "Bearer";
+    private static final JWSAlgorithm SIGNATURE_ALGORITHM = JWSAlgorithm.RS256;
 
-    private final JwtEncoder jwtEncoder;
+    private final JWSSigner jwtSigner;
     private final String issuer;
     private final String keyId;
     private final Duration accessTokenExpiration;
@@ -28,13 +31,13 @@ public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort, IssueOA
     public NimbusJwtTokenIssuerAdapter(
             String issuer,
             String keyId,
-            JwtEncoder jwtEncoder,
+            JWSSigner jwtSigner,
             Duration accessTokenExpiration,
             Clock clock
     ) {
         this.issuer = Objects.requireNonNull(issuer, "issuer must not be null");
         this.keyId = Objects.requireNonNull(keyId, "keyId must not be null");
-        this.jwtEncoder = Objects.requireNonNull(jwtEncoder, "jwtEncoder must not be null");
+        this.jwtSigner = Objects.requireNonNull(jwtSigner, "jwtSigner must not be null");
         this.accessTokenExpiration = Objects.requireNonNull(
                 accessTokenExpiration,
                 "accessTokenExpiration must not be null"
@@ -47,24 +50,17 @@ public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort, IssueOA
         Instant issuedAt = Instant.now(clock);
         Instant expiresAt = issuedAt.plus(accessTokenExpiration);
 
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .issuer(issuer)
                 .subject(user.getId().toString())
-                .issuedAt(issuedAt)
-                .expiresAt(expiresAt)
+                .issueTime(java.util.Date.from(issuedAt))
+                .expirationTime(java.util.Date.from(expiresAt))
                 .claim("email", user.getEmail())
                 .claim("name", user.getName())
                 .claim("provider", user.getProvider().name())
                 .build();
 
-        String tokenValue = jwtEncoder.encode(
-                JwtEncoderParameters.from(
-                        JwsHeader.with(SignatureAlgorithm.RS256)
-                                .keyId(keyId)
-                                .build(),
-                        claims
-                )
-        ).getTokenValue();
+        String tokenValue = signToken(claims);
 
         return new IssuedAccessToken(
                 issuer,
@@ -74,5 +70,21 @@ public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort, IssueOA
                 issuedAt,
                 expiresAt
         );
+    }
+
+    private String signToken(JWTClaimsSet claims) {
+        try {
+            SignedJWT signedJWT = new SignedJWT(
+                    new JWSHeader.Builder(SIGNATURE_ALGORITHM)
+                            .keyID(keyId)
+                            .type(JOSEObjectType.JWT)
+                            .build(),
+                    claims
+            );
+            signedJWT.sign(jwtSigner);
+            return signedJWT.serialize();
+        } catch (JOSEException exception) {
+            throw new IllegalStateException("Failed to sign JWT access token.", exception);
+        }
     }
 }

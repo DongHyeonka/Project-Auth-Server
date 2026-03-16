@@ -43,7 +43,7 @@ class ConfiguredJwtSigningKeySourceTest {
         JwtSigningKeyMaterial keyMaterial = source.load();
 
         assertThat(keyMaterial.activeKeyId()).isEqualTo("auth-rsa-2");
-        assertThat(keyMaterial.activePrivateJwk().getKeyID()).isEqualTo("auth-rsa-2");
+        assertThat(keyMaterial.activePublicJwk().getKeyID()).isEqualTo("auth-rsa-2");
         assertThat(keyMaterial.publicJwkSet().getKeys()).hasSize(2);
         assertThat(keyMaterial.publicJwkSet().getKeys())
                 .extracting(key -> key.getKeyID())
