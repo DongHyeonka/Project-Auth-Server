@@ -47,6 +47,7 @@ public class OAuth2SecurityConfiguration {
                                 "/",
                                 "/login",
                                 "/auth-login.html",
+                                "/.well-known/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",

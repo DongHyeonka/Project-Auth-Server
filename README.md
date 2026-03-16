@@ -12,8 +12,10 @@
 - Keycloak 기반 OAuth2 소셜 로그인 시작점 구성
 - Keycloak 로그인 성공 후 auth-server 내부 JWT 재발급 흐름 추가
 - `local`, `dev`, `prod` 환경 설정 분리
-- `.env` 예시 파일과 로컬 `docker compose` 실행 기준 추가
+- `.env` 실행 설정 파일과 로컬 `docker compose` 실행 기준 추가
 - auth-server 정적 로그인 페이지 추가
+- RS256 기반 JWT 발급과 JWK Set 공개
+- `api-server`, `worker` 검증 준비용 well-known 메타데이터 추가
 
 ## 모듈 구성
 
@@ -69,7 +71,7 @@
 - 현재 브랜치에서는 PostgreSQL + JPA + Flyway 기준으로 회원가입/로그인 흐름을 검증합니다.
 - OAuth2는 Keycloak을 OIDC 공급자로 사용하고, Google/GitHub 브로커는 `kc_idp_hint`로 분기합니다.
 - 응답은 공통 응답 형식으로 감싸서 반환합니다.
-- JWT는 auth-server가 직접 발급하고 `issuer`, `secret`, `expiration`은 설정값으로 관리합니다.
+- JWT는 auth-server가 RS256으로 직접 발급하고 `issuer`, `key pair`, `expiration`은 설정값으로 관리합니다.
 - JPA는 `ddl-auto=validate`로만 두고, 스키마 변경은 Flyway 스크립트로 관리합니다.
 - 실행 설정 파일은 `bootstrap` 모듈에 두고, 실제 값은 프로파일별 yml과 환경 변수로 분리합니다.
 
@@ -85,6 +87,9 @@
 - Postman 컬렉션 기반 수동 검증
 - PostgreSQL + Keycloak 로컬 인프라 구성
 - auth-server 로그인 페이지(`/login`)
+- JWT 공개키 노출 엔드포인트
+  - `GET /.well-known/openid-configuration`
+  - `GET /.well-known/jwks.json`
 
 ## 환경 설정 전략
 
@@ -102,13 +107,11 @@
 - `application-prod.yml`
   - 운영 환경에서 필요한 값을 환경 변수로 주입받습니다.
 
-`.env` 파일은 Spring Boot가 직접 읽는 파일이라기보다, 로컬 셸이나 `docker compose`, IDE 실행 설정이 환경 변수로 주입할 수 있도록 돕는 예시 파일로 사용합니다.
+`.env` 파일은 Spring Boot가 직접 읽는 파일이라기보다, 로컬 셸이나 `docker compose`, IDE 실행 설정이 환경 변수로 주입할 수 있도록 돕는 실행 설정 파일로 사용합니다.
 
-- `.env.local.example`
-- `.env.dev.example`
-- `.env.prod.example`
-
-실제 실행 파일은 Git에 올리지 않고, 예시 파일을 복사해 `.env.local`, `.env.dev`, `.env.prod`로 사용합니다.
+- `.env.local`
+- `.env.dev`
+- `.env.prod`
 
 ## 로컬 인프라
 
@@ -125,13 +128,7 @@
 
 ## 실행 방법
 
-먼저 예시 env 파일을 복사합니다.
-
-```bash
-cp .env.local.example .env.local
-```
-
-다음으로 로컬 인프라를 실행합니다.
+먼저 `.env.local` 값을 현재 로컬 환경에 맞게 확인한 뒤, 로컬 인프라를 실행합니다.
 
 ```bash
 docker compose --env-file .env.local up -d
@@ -165,7 +162,10 @@ set +a
 JWT 설정은 아래 환경 변수로 덮어쓸 수 있습니다.
 
 - `APP_SECURITY_JWT_ISSUER`
-- `APP_SECURITY_JWT_SECRET`
+- `APP_SECURITY_JWT_KEY_ID`
+- `APP_SECURITY_JWT_PUBLIC_KEY`
+- `APP_SECURITY_JWT_PRIVATE_KEY`
+- `APP_SECURITY_JWT_GENERATE_KEY_PAIR_ON_STARTUP`
 - `APP_SECURITY_JWT_ACCESS_TOKEN_EXPIRATION`
 
 Keycloak OAuth2 설정은 아래 환경 변수로 제어합니다.
@@ -248,6 +248,53 @@ auth-server는 Google/GitHub와 직접 연결하지 않고 Keycloak과만 연결
 - `GET /api/v1/auth/oauth2/keycloak/github`
 
 위 두 API는 Keycloak 인증 화면으로 리다이렉트되며, 인증이 완료되면 auth-server가 내부 JWT를 다시 발급한 JSON 응답을 반환합니다.
+
+## JWT 공개키 검증 기준
+
+이 브랜치부터 auth-server는 대칭키가 아니라 RS256으로 JWT를 발급합니다.
+
+- 로컬
+  - 공개키/개인키를 따로 주지 않으면 시작 시 임시 RSA 키 쌍을 생성합니다.
+  - 따라서 재시작 전후 토큰이 계속 유효해야 하는 상황이면 `.env.local`에 키를 직접 넣어야 합니다.
+- `dev`, `prod`
+  - `APP_SECURITY_JWT_PUBLIC_KEY`, `APP_SECURITY_JWT_PRIVATE_KEY`를 환경 변수로 명시합니다.
+  - `APP_SECURITY_JWT_GENERATE_KEY_PAIR_ON_STARTUP=false`를 유지합니다.
+
+공개 메타데이터는 아래 엔드포인트로 노출합니다.
+
+- OpenID metadata: `http://localhost:8080/.well-known/openid-configuration`
+- JWK Set: `http://localhost:8080/.well-known/jwks.json`
+
+`api-server`나 `worker`가 Spring Security Resource Server로 검증하려면 보통 아래처럼 붙이면 됩니다.
+
+```yaml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080
+```
+
+위 설정을 사용하면 auth-server의 `issuer`와 `jwks_uri`를 기준으로 공개키를 자동 조회해 JWT 서명을 검증할 수 있습니다.
+
+로컬에서 고정 키를 쓰고 싶으면 X.509 public key와 PKCS#8 private key를 Base64 또는 PEM 형식으로 환경 변수에 넣으면 됩니다. 관련 설정 위치는 아래 파일을 참고합니다.
+
+- `.env.local`
+- `.env.dev`
+- `.env.prod`
+
+OpenSSL로 키를 생성한 뒤 Base64로 환경 변수에 넣으려면 보통 아래 순서로 준비합니다.
+
+```bash
+openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048
+openssl rsa -pubout -in private_key.pem -out public_key.pem
+
+base64 -w 0 private_key.pem
+base64 -w 0 public_key.pem
+```
+
+`APP_SECURITY_JWT_PRIVATE_KEY`에는 private key, `APP_SECURITY_JWT_PUBLIC_KEY`에는 public key를 넣고, `APP_SECURITY_JWT_KEY_ID`는 키 버전을 식별할 수 있는 값으로 맞춥니다.
 
 ## Postman 사용 방법
 

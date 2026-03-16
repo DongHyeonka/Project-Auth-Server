@@ -8,7 +8,7 @@
 
 ## 1. 로컬 인프라 실행
 
-`.env.local.example`을 복사해서 `.env.local`을 만든 뒤 아래 명령으로 실행합니다.
+`.env.local` 값을 현재 환경에 맞게 확인한 뒤 아래 명령으로 실행합니다.
 
 ```bash
 docker compose --env-file .env.local up -d
