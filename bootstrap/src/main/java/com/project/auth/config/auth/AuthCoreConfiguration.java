@@ -63,7 +63,7 @@ public class AuthCoreConfiguration {
     ) {
         return new NimbusJwtTokenIssuerAdapter(
                 jwtProperties.issuer(),
-                jwtSigningKeyMaterial.keyId(),
+                jwtSigningKeyMaterial.activeKeyId(),
                 jwtEncoder,
                 jwtProperties.accessTokenExpiration(),
                 systemClock

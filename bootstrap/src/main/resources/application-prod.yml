@@ -45,8 +45,6 @@ app:
   security:
     jwt:
       issuer: ${APP_SECURITY_JWT_ISSUER}
-      key-id: ${APP_SECURITY_JWT_KEY_ID:}
-      public-key: ${APP_SECURITY_JWT_PUBLIC_KEY}
-      private-key: ${APP_SECURITY_JWT_PRIVATE_KEY}
+      active-key-id: ${APP_SECURITY_JWT_ACTIVE_KEY_ID}
       generate-key-pair-on-startup: ${APP_SECURITY_JWT_GENERATE_KEY_PAIR_ON_STARTUP:false}
       access-token-expiration: ${APP_SECURITY_JWT_ACCESS_TOKEN_EXPIRATION}

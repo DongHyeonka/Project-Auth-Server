@@ -1,7 +1,6 @@
 package com.project.auth.presentation.auth.controller;
 
 import com.project.auth.application.auth.login.LoginResult;
-import com.project.auth.application.auth.oauth.login.port.in.OAuthLoginUseCase;
 import com.project.auth.presentation.auth.mapper.AuthPresentationMapper;
 import com.project.auth.presentation.auth.mapper.OAuth2AuthenticationCommandMapper;
 import org.junit.jupiter.api.Test;
