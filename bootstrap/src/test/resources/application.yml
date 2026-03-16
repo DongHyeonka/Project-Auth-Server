@@ -51,8 +51,11 @@ app:
       location: classpath:db/migration
   security:
     jwt:
-      issuer: project-auth-server-test
-      secret: project-auth-server-test-jwt-secret-key-12345
+      issuer: http://localhost:8080
+      key-id: test-rsa-key-1
+      public-key:
+      private-key:
+      generate-key-pair-on-startup: true
       access-token-expiration: PT30M
     oauth2:
       google-registration-id: keycloak-google

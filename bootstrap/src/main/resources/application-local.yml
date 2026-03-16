@@ -44,6 +44,9 @@ app:
       run-on-startup: ${APP_PERSISTENCE_MIGRATION_RUN_ON_STARTUP:false}
   security:
     jwt:
-      issuer: ${APP_SECURITY_JWT_ISSUER:project-auth-server}
-      secret: ${APP_SECURITY_JWT_SECRET:project-auth-server-local-jwt-secret-key-12345}
+      issuer: ${APP_SECURITY_JWT_ISSUER:http://localhost:8080}
+      key-id: ${APP_SECURITY_JWT_KEY_ID:}
+      public-key: ${APP_SECURITY_JWT_PUBLIC_KEY:}
+      private-key: ${APP_SECURITY_JWT_PRIVATE_KEY:}
+      generate-key-pair-on-startup: ${APP_SECURITY_JWT_GENERATE_KEY_PAIR_ON_STARTUP:true}
       access-token-expiration: ${APP_SECURITY_JWT_ACCESS_TOKEN_EXPIRATION:PT30M}

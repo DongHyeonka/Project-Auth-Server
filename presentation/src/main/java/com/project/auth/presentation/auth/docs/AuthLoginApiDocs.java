@@ -38,8 +38,8 @@ public interface AuthLoginApiDocs {
                                                   "provider": "LOCAL"
                                                 },
                                                 "token": {
-                                                  "issuer": "project-auth-server",
-                                                  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+                                                  "issuer": "https://auth.example.com",
+                                                  "accessToken": "eyJraWQiOiJhdXRoLXJzYS0xIiwiYWxnIjoiUlMyNTYifQ...",
                                                   "tokenType": "Bearer",
                                                   "expiresIn": 1800,
                                                   "issuedAt": "2026-03-14T00:00:00Z",

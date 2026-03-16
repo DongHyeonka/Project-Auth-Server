@@ -5,9 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 
 public record LoginTokenResponse(
-        @Schema(description = "토큰 발급 주체", example = "project-auth-server")
+        @Schema(description = "토큰 발급 주체", example = "https://auth.example.com")
         String issuer,
-        @Schema(description = "액세스 토큰", example = "eyJhbGciOiJIUzI1NiJ9...")
+        @Schema(description = "액세스 토큰", example = "eyJraWQiOiJhdXRoLXJzYS0xIiwiYWxnIjoiUlMyNTYifQ...")
         String accessToken,
         @Schema(description = "토큰 타입", example = "Bearer")
         String tokenType,

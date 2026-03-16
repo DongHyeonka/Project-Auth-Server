@@ -16,14 +16,13 @@ import com.project.auth.application.user.signup.port.out.PasswordHasherPort;
 import com.project.auth.application.user.signup.port.out.RegisterUserPort;
 import com.project.auth.infrastructure.security.password.BcryptPasswordEncoderAdapter;
 import com.project.auth.infrastructure.security.token.NimbusJwtTokenIssuerAdapter;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
 
 import java.time.Clock;
 
 @Configuration
-@EnableConfigurationProperties(JwtProperties.class)
 public class AuthCoreConfiguration {
 
     @Bean
@@ -56,10 +55,16 @@ public class AuthCoreConfiguration {
     }
 
     @Bean
-    public IssueLoginTokenPort issueLoginTokenPort(JwtProperties jwtProperties, Clock systemClock) {
+    public IssueLoginTokenPort issueLoginTokenPort(
+            JwtProperties jwtProperties,
+            JwtSigningKeyMaterial jwtSigningKeyMaterial,
+            JwtEncoder jwtEncoder,
+            Clock systemClock
+    ) {
         return new NimbusJwtTokenIssuerAdapter(
                 jwtProperties.issuer(),
-                jwtProperties.secret(),
+                jwtSigningKeyMaterial.keyId(),
+                jwtEncoder,
                 jwtProperties.accessTokenExpiration(),
                 systemClock
         );
