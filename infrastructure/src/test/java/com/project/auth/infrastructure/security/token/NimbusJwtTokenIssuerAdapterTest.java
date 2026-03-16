@@ -1,24 +1,22 @@
 package com.project.auth.infrastructure.security.token;
 
-import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.SignedJWT;
 import com.project.auth.application.auth.token.IssuedAccessToken;
 import com.project.auth.domain.user.model.User;
 import com.project.auth.domain.user.model.UserEmail;
 import com.project.auth.domain.user.model.UserName;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.UUID;
@@ -41,14 +39,12 @@ class NimbusJwtTokenIssuerAdapterTest {
                 .keyUse(KeyUse.SIGNATURE)
                 .build();
 
-        JwtEncoder jwtEncoder = new NimbusJwtEncoder(
-                new ImmutableJWKSet<SecurityContext>(new JWKSet(rsaKey))
-        );
+        JWSSigner jwtSigner = new RSASSASigner(rsaKey);
         NimbusJwtTokenIssuerAdapter adapter = new NimbusJwtTokenIssuerAdapter(
                 "https://auth.example.com",
                 "auth-server-rsa-1",
-                jwtEncoder,
-                java.time.Duration.ofMinutes(30),
+                jwtSigner,
+                Duration.ofMinutes(30),
                 Clock.fixed(Instant.parse("2026-03-15T00:00:00Z"), ZoneOffset.UTC)
         );
 

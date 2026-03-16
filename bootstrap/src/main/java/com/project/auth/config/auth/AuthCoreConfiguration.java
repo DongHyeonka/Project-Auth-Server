@@ -18,7 +18,7 @@ import com.project.auth.infrastructure.security.password.BcryptPasswordEncoderAd
 import com.project.auth.infrastructure.security.token.NimbusJwtTokenIssuerAdapter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
+import com.nimbusds.jose.JWSSigner;
 
 import java.time.Clock;
 
@@ -58,13 +58,13 @@ public class AuthCoreConfiguration {
     public IssueLoginTokenPort issueLoginTokenPort(
             JwtProperties jwtProperties,
             JwtSigningKeyMaterial jwtSigningKeyMaterial,
-            JwtEncoder jwtEncoder,
+            JWSSigner jwtSigner,
             Clock systemClock
     ) {
         return new NimbusJwtTokenIssuerAdapter(
                 jwtProperties.issuer(),
                 jwtSigningKeyMaterial.activeKeyId(),
-                jwtEncoder,
+                jwtSigner,
                 jwtProperties.accessTokenExpiration(),
                 systemClock
         );

@@ -48,3 +48,9 @@ app:
       active-key-id: ${APP_SECURITY_JWT_ACTIVE_KEY_ID:local-generated-rsa-1}
       generate-key-pair-on-startup: ${APP_SECURITY_JWT_GENERATE_KEY_PAIR_ON_STARTUP:true}
       access-token-expiration: ${APP_SECURITY_JWT_ACCESS_TOKEN_EXPIRATION:PT30M}
+      vault:
+        enabled: ${APP_SECURITY_JWT_VAULT_ENABLED:false}
+        address: ${APP_SECURITY_JWT_VAULT_ADDRESS:http://localhost:8200}
+        token: ${APP_SECURITY_JWT_VAULT_TOKEN:project-auth-root-token}
+        mount-path: ${APP_SECURITY_JWT_VAULT_MOUNT_PATH:transit}
+        transit-key-name: ${APP_SECURITY_JWT_VAULT_TRANSIT_KEY_NAME:project-auth-jwt}

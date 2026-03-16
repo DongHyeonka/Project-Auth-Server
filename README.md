@@ -115,7 +115,7 @@
 
 ## 로컬 인프라
 
-로컬에서는 루트의 `docker-compose.yml`로 PostgreSQL과 Keycloak을 함께 띄웁니다.
+로컬에서는 루트의 `docker-compose.yml`로 PostgreSQL, Keycloak, Vault를 함께 띄웁니다.
 
 - PostgreSQL
   - auth-server용 DB: `project_auth`
@@ -123,6 +123,9 @@
 - Keycloak
   - PostgreSQL을 외부 DB로 사용합니다.
   - 로컬 realm import 파일은 `docs/keycloak/realm/project-auth-realm-local.json`에 둡니다.
+- Vault
+  - dev mode로 기동합니다.
+  - `vault-init` 서비스가 transit engine과 로컬 signing key를 자동으로 준비합니다.
 
 같은 PostgreSQL 인스턴스를 쓰더라도 auth-server와 Keycloak은 DB를 분리합니다. 애플리케이션 테이블과 Keycloak 관리 테이블을 한 DB에 섞지 않는 것을 기본 기준으로 잡습니다.
 
@@ -148,6 +151,7 @@ set +a
 
 애플리케이션 실행 전에 대상 DB와 Keycloak이 먼저 떠 있어야 합니다.
 로컬 Keycloak 설정 절차는 `docs/keycloak/LOCAL_SETUP.md` 문서를 기준으로 맞춥니다.
+Vault Transit 로컬 확인 절차는 `docs/vault/LOCAL_SETUP.md`를 참고합니다.
 
 브라우저에서 `http://localhost:8080/login` 으로 들어가면 auth-server가 직접 제공하는 로그인 페이지를 확인할 수 있습니다.
 
@@ -171,6 +175,11 @@ JWT 설정은 아래 환경 변수로 덮어쓸 수 있습니다.
 - `APP_SECURITY_JWT_KEYS_1_KEY_ID`
 - `APP_SECURITY_JWT_KEYS_1_PUBLIC_KEY`
 - `APP_SECURITY_JWT_KEYS_1_PRIVATE_KEY`
+- `APP_SECURITY_JWT_VAULT_ENABLED`
+- `APP_SECURITY_JWT_VAULT_ADDRESS`
+- `APP_SECURITY_JWT_VAULT_TOKEN`
+- `APP_SECURITY_JWT_VAULT_MOUNT_PATH`
+- `APP_SECURITY_JWT_VAULT_TRANSIT_KEY_NAME`
 
 Keycloak OAuth2 설정은 아래 환경 변수로 제어합니다.
 
@@ -315,6 +324,32 @@ base64 -w 0 public_key.pem
 이 상태에서는 새 토큰은 `auth-rsa-2`로 발급하고, 기존 `auth-rsa-1`로 서명된 토큰은 만료될 때까지 계속 검증할 수 있습니다.
 
 현재 구현은 `ConfiguredJwtSigningKeySource`가 환경 변수 기반으로 키를 읽습니다. 이후 Secret 관리가 더 고도화되면 같은 `JwtSigningKeySource` 인터페이스를 구현하는 방식으로 Vault, AWS KMS, GCP KMS, HSM 연동으로 확장할 수 있습니다. 즉 이번 브랜치에서는 KMS/HSM 자체를 붙이기보다, 그 방향으로 갈 수 있도록 키 소스를 분리해 둔 상태입니다.
+
+## Refresh Token 정책 기준
+
+현재 auth-server는 refresh token을 아직 발급하지 않고, access token만 JSON 응답으로 반환합니다. 따라서 아래 항목은 이번 브랜치 범위에 포함하지 않습니다.
+
+- refresh token 발급
+- 재발급 API
+- HttpOnly cookie 저장 전략
+- refresh token 회전 및 폐기 정책
+
+이유는 이 항목들이 단순 토큰 필드 추가 수준이 아니라, 아래 설계를 함께 요구하기 때문입니다.
+
+- 저장 위치
+  - DB, Redis, stateless token 중 무엇을 기준으로 할지
+- 재발급 계약
+  - API 응답 모델, 오류 코드, 만료/폐기 규칙
+- 브라우저 보안 정책
+  - `HttpOnly`, `Secure`, `SameSite`, CSRF 대응
+- 로그아웃 및 세션 무효화 기준
+
+이번 브랜치에서는 먼저 access token 서명 구조를 Vault Transit까지 확장 가능한 형태로 정리하고, refresh token은 별도 브랜치에서 다루는 것을 기본 방침으로 잡습니다. 순서는 아래처럼 가져갑니다.
+
+1. Vault Transit 기반 access token 서명 구조 정리
+2. refresh token 저장/재발급 정책 확정
+3. cookie 전략과 브라우저 보안 정책 확정
+4. 재발급 API와 로그아웃/폐기 흐름 구현
 
 ## Postman 사용 방법
 
