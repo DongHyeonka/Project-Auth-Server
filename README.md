@@ -199,6 +199,73 @@ Keycloak OAuth2 설정은 아래 환경 변수로 제어합니다.
 - `.env.prod`
   - 운영 환경 예시
 
+## 애플리케이션 이미지 빌드
+
+루트의 [Dockerfile](/home/donghyeon/dev/Project-Auth-Server/Dockerfile)로 `auth-server` 이미지를 빌드할 수 있습니다.
+
+현재 Dockerfile은 멀티스테이지 빌드로 동작합니다.
+
+1. Gradle로 `:bootstrap:bootJar` 생성
+2. BuildKit cache mount로 Gradle 캐시 재사용
+3. Spring Boot `jarmode=tools`로 layered jar를 추출
+4. dependency / boot loader / application 레이어를 분리 복사
+5. 최종 JRE 이미지에 필요한 레이어만 복사
+6. non-root 사용자로 애플리케이션 실행
+7. `/actuator/health` 기반 Docker healthcheck 포함
+
+로컬 빌드:
+
+```bash
+docker build -t project-auth-server:local .
+```
+
+로컬 실행 예시:
+
+```bash
+docker run --rm -p 8080:8080 \
+  --env-file .env.local \
+  -e SPRING_PROFILES_ACTIVE=local \
+  project-auth-server:local
+```
+
+같은 이미지를 `dev`, `prod`에서 함께 사용하려면 런타임에 `SPRING_PROFILES_ACTIVE`만 다르게 주입하면 됩니다.
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e SPRING_PROFILES_ACTIVE=dev \
+  -e APP_DATASOURCE_URL=jdbc:postgresql://host:5432/project_auth \
+  -e APP_DATASOURCE_USERNAME=project_auth \
+  -e APP_DATASOURCE_PASSWORD=project_auth \
+  project-auth-server:local
+```
+
+컨테이너에서 JVM 옵션이 필요하면 `JAVA_TOOL_OPTIONS`로 주입합니다. 현재 엔트리포인트는 `java -jar /app/application.jar` 형태라 JVM이 `JAVA_TOOL_OPTIONS`를 자동으로 읽습니다.
+
+```bash
+docker run --rm -p 8080:8080 \
+  --env-file .env.local \
+  -e SPRING_PROFILES_ACTIVE=local \
+  -e JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0" \
+  project-auth-server:local
+```
+
+Docker BuildKit이 비활성화된 환경이라면 아래처럼 켜서 빌드합니다.
+
+```bash
+DOCKER_BUILDKIT=1 docker build -t project-auth-server:local .
+```
+
+개발/운영 환경에서는 `.env.*` 파일을 이미지에 포함하지 않고, 런타임 환경 변수 또는 Kubernetes `ConfigMap`/`Secret`으로 주입하는 것을 기본 기준으로 합니다.
+현재 베이스 이미지는 digest까지 고정해 두어 재현성을 높였고, 이후 보안 패치 주기에 맞춰 digest를 갱신하는 방식으로 운영하는 것을 권장합니다.
+
+Actuator health endpoint는 아래 경로를 사용합니다.
+
+- `/actuator/health`
+- `/actuator/health/liveness`
+- `/actuator/health/readiness`
+- `/livez`
+- `/readyz`
+
 ## Flyway 운영 기준
 
 Flyway는 스키마 변경을 추적하기 위해 이번 브랜치에서 적용했습니다. 다만 운영 환경에서 애플리케이션 Pod가 스케일 아웃될 때마다 마이그레이션을 시도하게 두는 구조는 지양합니다.
