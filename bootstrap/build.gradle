@@ -1,3 +1,6 @@
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+import org.gradle.api.JavaVersion
+
 dependencies {
     implementation project(':application')
     implementation project(':common')
@@ -20,4 +23,12 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation project(':domain')
     testRuntimeOnly 'com.h2database:h2'
+}
+
+tasks.register("migrationBootJar", BootJar) {
+    group = "build"
+    archiveClassifier = "migration"
+    mainClass = "com.project.authmigration.MigrationApplication"
+    classpath = sourceSets.main.runtimeClasspath
+    targetJavaVersion = JavaVersion.VERSION_21
 }
