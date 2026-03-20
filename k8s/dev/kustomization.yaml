@@ -4,14 +4,14 @@ kind: Kustomization
 namespace: auth-dev
 
 resources:
-  - namespace.yaml
-  - serviceaccount.yaml
-  - configmap.yaml
-  - service.yaml
-  - db-migration-job.yaml
-  - deployment.yaml
+- namespace.yaml
+- serviceaccount.yaml
+- configmap.yaml
+- service.yaml
+- db-migration-job.yaml
+- deployment.yaml
 
 images:
 - name: ghcr.io/donghyeonka/project-auth-server
   newName: ghcr.io/donghyeonka/project-auth-server
-  newTag: 5154a39
+  newTag: 58c6f8e
