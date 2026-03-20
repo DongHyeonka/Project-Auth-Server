@@ -266,6 +266,74 @@ Actuator health endpoint는 아래 경로를 사용합니다.
 - `/livez`
 - `/readyz`
 
+## Dev CI/CD
+
+이 저장소는 [`.github/workflows/dev-ci-cd.yml`](/home/donghyeon/dev/Project-Auth-Server/.github/workflows/dev-ci-cd.yml) 기준으로 dev CI/CD를 구성합니다.
+
+- Pull Request to `develop`
+  - `./gradlew test`
+- Push to `develop`
+  - `./gradlew test`
+  - `ghcr.io/<owner>/project-auth-server:dev`
+  - `ghcr.io/<owner>/project-auth-server:<short-sha>`
+    두 태그로 이미지를 빌드/푸시
+  - `k8s/dev/kustomization.yaml`의 `newTag`를 새 `<short-sha>`로 갱신
+  - 같은 `develop` 브랜치에 manifest 변경 커밋 반영
+  - Argo CD가 `develop`을 감시 중이면 새 태그를 sync
+
+현재 dev 배포 선언은 아래 파일로 관리합니다.
+
+- Kustomize: [k8s/dev/kustomization.yaml](/home/donghyeon/dev/Project-Auth-Server/k8s/dev/kustomization.yaml)
+- Argo CD AppProject: [argocd/auth-dev-project.yaml](/home/donghyeon/dev/Project-Auth-Server/argocd/auth-dev-project.yaml)
+- Argo CD Application: [argocd/dev-auth-server-application.yaml](/home/donghyeon/dev/Project-Auth-Server/argocd/dev-auth-server-application.yaml)
+
+민감값은 Git에 직접 올리지 않고, [k8s/dev/secret.yaml](/home/donghyeon/dev/Project-Auth-Server/k8s/dev/secret.yaml)에 키 구조만 유지한 채 placeholder 값만 둡니다.
+현재 dev 구성은 secret까지 Argo CD가 직접 생성하는 방식이 아니라, 실제 secret은 namespace에 사전 생성하고 Argo CD는 그 참조만 배포하는 방식입니다.
+
+현재 workflow는 아래 기준으로 정리되어 있습니다.
+
+- runner: `ubuntu-24.04`
+- major tag 대신 명시적 action version 사용
+- 현재 단일 아키 빌드만 하므로 QEMU 제거
+- 배포 기준 태그는 `dev`가 아니라 `<short-sha>`
+- `dev`는 편의용 moving tag로만 유지
+
+dev namespace에서 먼저 필요한 secret은 아래 두 개입니다.
+
+1. GHCR pull secret
+
+```bash
+kubectl create secret docker-registry ghcr-regcred \
+  --namespace auth-dev \
+  --docker-server=ghcr.io \
+  --docker-username=<github-username> \
+  --docker-password=<github-pat-or-ghcr-token>
+```
+
+2. auth-server secret
+
+```bash
+kubectl apply -f k8s/dev/namespace.yaml
+kubectl apply -f k8s/dev/serviceaccount.yaml
+kubectl apply -f k8s/dev/service.yaml
+kubectl apply -f k8s/dev/configmap.yaml
+
+cp k8s/dev/secret.yaml /tmp/auth-server-secret.yaml
+# /tmp/auth-server-secret.yaml 안의 change-me 값을 실제 값으로 교체
+kubectl apply -f /tmp/auth-server-secret.yaml
+```
+
+Argo CD는 클러스터에 별도 설치해야 합니다. 이 저장소는 Argo CD가 읽을 `Application` 선언만 함께 관리합니다.
+적용 순서는 보통 `AppProject -> Application` 순서로 가져갑니다.
+
+현재 dev namespace는 Pod Security Admission 기준으로 아래 라벨을 사용합니다.
+
+- `enforce=baseline`
+- `warn=restricted`
+- `audit=restricted`
+
+Deployment는 이에 맞춰 `runAsNonRoot`, `seccompProfile: RuntimeDefault`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`, `startupProbe`, `livenessProbe`, `readinessProbe`를 포함합니다.
+
 ## Flyway 운영 기준
 
 Flyway는 스키마 변경을 추적하기 위해 이번 브랜치에서 적용했습니다. 다만 운영 환경에서 애플리케이션 Pod가 스케일 아웃될 때마다 마이그레이션을 시도하게 두는 구조는 지양합니다.
