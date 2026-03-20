@@ -37,8 +37,8 @@ FROM eclipse-temurin:21-jre-jammy@sha256:fcf98f8a669c2778b2a1a145c7dac92a1f8fc71
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/* && \
-    groupadd --system spring && \
-    useradd --system --gid spring --create-home --home-dir /app spring
+    groupadd --system --gid 10001 spring && \
+    useradd --system --uid 10001 --gid 10001 --create-home --home-dir /app spring
 
 WORKDIR /app
 
@@ -49,7 +49,7 @@ COPY --chown=spring:spring --from=builder /workspace/extracted/application/ ./
 
 EXPOSE 8080
 
-USER spring
+USER 10001:10001
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD curl --fail --silent http://127.0.0.1:8080/actuator/health > /dev/null || exit 1
