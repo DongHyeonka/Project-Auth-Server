@@ -334,6 +334,23 @@ Argo CD는 클러스터에 별도 설치해야 합니다. 이 저장소는 Argo 
 
 Deployment는 이에 맞춰 `runAsNonRoot`, `seccompProfile: RuntimeDefault`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`, `startupProbe`, `livenessProbe`, `readinessProbe`를 포함합니다.
 
+## Platform services for dev
+
+auth-server가 실제로 기동되려면 `Postgres`, `Keycloak`, `Vault`가 먼저 필요합니다. dev 기준 공용 platform 서비스 manifest는 아래 경로로 관리합니다.
+
+- Kustomize: [k8s/platform-dev/kustomization.yaml](/home/donghyeon/dev/Project-Auth-Server/k8s/platform-dev/kustomization.yaml)
+- Argo CD Application: [argocd/dev-platform-application.yaml](/home/donghyeon/dev/Project-Auth-Server/argocd/dev-platform-application.yaml)
+
+`platform-dev`는 별도 `AppProject`를 두지 않고 기존 [argocd/auth-dev-project.yaml](/home/donghyeon/dev/Project-Auth-Server/argocd/auth-dev-project.yaml)을 함께 사용합니다. 현재 단계에서는 같은 저장소/같은 dev 환경에서 auth-server와 공용 platform 서비스를 같이 관리하는 편이 단순하고 충분합니다.
+
+현재 platform manifest는 아래 서비스 이름을 기준으로 앱과 연결됩니다.
+
+- `postgres.platform.svc.cluster.local`
+- `keycloak.platform.svc.cluster.local:8081`
+- `vault.platform.svc.cluster.local`
+
+민감값은 [k8s/platform-dev/secret.yaml](/home/donghyeon/dev/Project-Auth-Server/k8s/platform-dev/secret.yaml)에 placeholder만 두고, 실제 값으로 채운 뒤 namespace에 수동 적용하는 방식을 기준으로 합니다.
+
 ## Flyway 운영 기준
 
 Flyway는 스키마 변경을 추적하기 위해 이번 브랜치에서 적용했습니다. 다만 운영 환경에서 애플리케이션 Pod가 스케일 아웃될 때마다 마이그레이션을 시도하게 두는 구조는 지양합니다.
