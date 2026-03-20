@@ -14,4 +14,4 @@ resources:
 images:
 - name: ghcr.io/donghyeonka/project-auth-server
   newName: ghcr.io/donghyeonka/project-auth-server
-  newTag: 58c6f8e
+  newTag: 667dcdf
