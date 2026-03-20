@@ -26,10 +26,13 @@ COPY infrastructure/src infrastructure/src
 COPY presentation/src presentation/src
 
 RUN --mount=type=cache,target=/root/.gradle \
-    ./gradlew --no-daemon :bootstrap:bootJar && \
-    JAR_PATH="$(find /workspace/bootstrap/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' | head -n 1)" && \
+    ./gradlew --no-daemon :bootstrap:bootJar :bootstrap:migrationBootJar && \
+    JAR_PATH="$(find /workspace/bootstrap/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' ! -name '*-migration.jar' | head -n 1)" && \
     test -n "$JAR_PATH" && \
     cp "$JAR_PATH" /workspace/application.jar && \
+    MIGRATION_JAR_PATH="$(find /workspace/bootstrap/build/libs -maxdepth 1 -type f -name '*-migration.jar' | head -n 1)" && \
+    test -n "$MIGRATION_JAR_PATH" && \
+    cp "$MIGRATION_JAR_PATH" /workspace/migration.jar && \
     java -Djarmode=tools -jar /workspace/application.jar extract --layers --destination /workspace/extracted
 
 FROM eclipse-temurin:21-jre-jammy@sha256:fcf98f8a669c2778b2a1a145c7dac92a1f8fc71e967734bd2a749d2f42572db1
@@ -46,6 +49,7 @@ COPY --chown=spring:spring --from=builder /workspace/extracted/dependencies/ ./
 COPY --chown=spring:spring --from=builder /workspace/extracted/spring-boot-loader/ ./
 COPY --chown=spring:spring --from=builder /workspace/extracted/snapshot-dependencies/ ./
 COPY --chown=spring:spring --from=builder /workspace/extracted/application/ ./
+COPY --chown=spring:spring --from=builder /workspace/migration.jar /app/migration.jar
 
 EXPOSE 8080
 
