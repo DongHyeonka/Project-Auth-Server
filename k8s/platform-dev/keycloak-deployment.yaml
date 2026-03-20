@@ -64,24 +64,26 @@ spec:
             httpGet:
               path: /health/ready
               port: management
-            initialDelaySeconds: 20
+            initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 3
+            failureThreshold: 6
           livenessProbe:
             httpGet:
               path: /health/live
               port: management
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 15
             timeoutSeconds: 3
+            failureThreshold: 6
           startupProbe:
             httpGet:
               path: /health/ready
               port: management
-            initialDelaySeconds: 10
+            initialDelaySeconds: 20
             periodSeconds: 10
             timeoutSeconds: 3
-            failureThreshold: 12
+            failureThreshold: 30
           resources:
             requests:
               cpu: 250m
