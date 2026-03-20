@@ -14,9 +14,6 @@ spec:
         app: postgres
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 999
-        runAsGroup: 999
         fsGroup: 999
         seccompProfile:
           type: RuntimeDefault
@@ -34,6 +31,9 @@ spec:
             runAsUser: 0
             runAsGroup: 0
             allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
