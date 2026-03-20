@@ -287,6 +287,8 @@ Actuator health endpoint는 아래 경로를 사용합니다.
 - Argo CD AppProject: [argocd/auth-dev-project.yaml](/home/donghyeon/dev/Project-Auth-Server/argocd/auth-dev-project.yaml)
 - Argo CD Application: [argocd/dev-auth-server-application.yaml](/home/donghyeon/dev/Project-Auth-Server/argocd/dev-auth-server-application.yaml)
 
+auth-server dev 배포에는 [k8s/dev/db-migration-job.yaml](/home/donghyeon/dev/Project-Auth-Server/k8s/dev/db-migration-job.yaml)이 포함되어 있어, Argo CD sync 시 migration job이 먼저 실행되고 그 뒤 애플리케이션 Deployment가 따라오는 흐름을 기대합니다.
+
 민감값은 Git에 직접 올리지 않고, [k8s/dev/secret.yaml](/home/donghyeon/dev/Project-Auth-Server/k8s/dev/secret.yaml)에 키 구조만 유지한 채 placeholder 값만 둡니다.
 현재 dev 구성은 secret까지 Argo CD가 직접 생성하는 방식이 아니라, 실제 secret은 namespace에 사전 생성하고 Argo CD는 그 참조만 배포하는 방식입니다.
 
