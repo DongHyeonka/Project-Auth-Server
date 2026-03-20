@@ -9,7 +9,7 @@ data:
   APP_DOCS_VERSION: v1
   APP_DATASOURCE_URL: jdbc:postgresql://postgres.platform.svc.cluster.local:5432/project_auth
   APP_PERSISTENCE_MIGRATION_RUN_ON_STARTUP: "false"
-  APP_SECURITY_OAUTH2_KEYCLOAK_ISSUER_URI: http://keycloak.platform.svc.cluster.local:8080/realms/project-auth
+  APP_SECURITY_OAUTH2_KEYCLOAK_ISSUER_URI: http://keycloak.platform.svc.cluster.local:8081/realms/project-auth
   APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_ID: project-auth-server
   APP_SECURITY_OAUTH2_GOOGLE_REGISTRATION_ID: keycloak-google
   APP_SECURITY_OAUTH2_GOOGLE_IDP_HINT: google
