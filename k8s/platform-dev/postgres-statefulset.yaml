@@ -14,9 +14,6 @@ spec:
         app: postgres
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 999
-        runAsGroup: 999
         fsGroup: 999
         seccompProfile:
           type: RuntimeDefault
@@ -72,6 +69,10 @@ spec:
                 secretKeyRef:
                   name: platform-secret
                   key: KEYCLOAK_DB_PASSWORD
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
