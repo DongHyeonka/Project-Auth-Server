@@ -1,4 +1,4 @@
-package com.project.auth.common.response;
+package com.project.auth.presentation.support.response;
 
 public record ApiResult<T>(
         boolean success,

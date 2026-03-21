@@ -2,7 +2,7 @@
 
 ## 기본 전제
 
-- `docker compose`는 루트 `docker-compose.yml`을 사용합니다.
+- `docker compose`는 `deploy/docker/docker-compose.yml`을 사용합니다.
 - 실제 소셜 로그인용 `Google`/`GitHub` Client ID와 Secret은 auth-server가 아니라 Keycloak에 등록합니다.
 - auth-server는 Keycloak realm의 OIDC client 정보만 사용합니다.
 

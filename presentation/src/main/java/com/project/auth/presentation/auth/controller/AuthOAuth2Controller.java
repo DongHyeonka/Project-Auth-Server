@@ -2,12 +2,12 @@ package com.project.auth.presentation.auth.controller;
 
 import com.project.auth.application.auth.login.LoginResult;
 import com.project.auth.application.auth.oauth.login.port.in.OAuthLoginUseCase;
-import com.project.auth.application.support.code.SuccessCode;
-import com.project.auth.common.response.ApiResult;
 import com.project.auth.presentation.auth.docs.AuthOAuth2ApiDocs;
 import com.project.auth.presentation.auth.dto.LoginResponse;
 import com.project.auth.presentation.auth.mapper.AuthPresentationMapper;
 import com.project.auth.presentation.auth.mapper.OAuth2AuthenticationCommandMapper;
+import com.project.auth.presentation.support.response.ApiResult;
+import com.project.auth.presentation.support.response.ApiSuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpHeaders;
@@ -26,7 +26,7 @@ import java.net.URI;
 @Tag(name = "Auth", description = "OAuth2 소셜 로그인 API")
 public class AuthOAuth2Controller implements AuthOAuth2ApiDocs {
 
-    private static final SuccessCode LOGIN_SUCCEEDED = SuccessCode.AUTH_LOGIN_SUCCEEDED;
+    private static final ApiSuccessCode LOGIN_SUCCEEDED = ApiSuccessCode.AUTH_LOGIN_SUCCEEDED;
 
     private final OAuthLoginUseCase oAuthLoginUseCase;
     private final AuthPresentationMapper authPresentationMapper;

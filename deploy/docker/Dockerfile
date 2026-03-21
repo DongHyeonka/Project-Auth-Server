@@ -9,7 +9,6 @@ COPY gradle gradle
 COPY settings.gradle build.gradle gradle.properties ./
 COPY bootstrap/build.gradle bootstrap/build.gradle
 COPY application/build.gradle application/build.gradle
-COPY common/build.gradle common/build.gradle
 COPY domain/build.gradle domain/build.gradle
 COPY infrastructure/build.gradle infrastructure/build.gradle
 COPY presentation/build.gradle presentation/build.gradle
@@ -20,7 +19,6 @@ RUN --mount=type=cache,target=/root/.gradle \
 
 COPY bootstrap/src bootstrap/src
 COPY application/src application/src
-COPY common/src common/src
 COPY domain/src domain/src
 COPY infrastructure/src infrastructure/src
 COPY presentation/src presentation/src

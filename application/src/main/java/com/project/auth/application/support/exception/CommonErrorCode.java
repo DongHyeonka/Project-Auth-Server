@@ -1,22 +1,15 @@
 package com.project.auth.application.support.exception;
 
 public enum CommonErrorCode implements ErrorCode {
-    INVALID_INPUT(400, "COMMON-001", "요청 값이 올바르지 않습니다."),
-    INTERNAL_SERVER_ERROR(500, "COMMON-999", "예상하지 못한 오류가 발생했습니다.");
+    INVALID_INPUT("COMMON-001", "요청 값이 올바르지 않습니다."),
+    INTERNAL_SERVER_ERROR("COMMON-999", "예상하지 못한 오류가 발생했습니다.");
 
-    private final int status;
     private final String code;
     private final String message;
 
-    CommonErrorCode(int status, String code, String message) {
-        this.status = status;
+    CommonErrorCode(String code, String message) {
         this.code = code;
         this.message = message;
-    }
-
-    @Override
-    public int status() {
-        return status;
     }
 
     @Override
