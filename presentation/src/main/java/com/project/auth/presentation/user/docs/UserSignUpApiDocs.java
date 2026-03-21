@@ -1,8 +1,8 @@
 package com.project.auth.presentation.user.docs;
 
-import com.project.auth.common.response.ApiResult;
 import com.project.auth.presentation.user.dto.SignUpRequest;
 import com.project.auth.presentation.user.dto.SignUpResponse;
+import com.project.auth.presentation.support.response.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;

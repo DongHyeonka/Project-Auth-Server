@@ -2,7 +2,7 @@
 
 ## 기본 전제
 
-- 루트 `docker-compose.yml`에 `vault`, `vault-init` 서비스가 포함되어 있습니다.
+- `deploy/docker/docker-compose.yml`에 `vault`, `vault-init` 서비스가 포함되어 있습니다.
 - 현재 단계는 Vault Transit 개념과 로컬 서명 흐름을 익히는 단계입니다.
 - 아직 auth-server가 Vault를 실제 signer로 사용하지 않아도, transit 엔진과 키를 먼저 준비해 둘 수 있습니다.
 

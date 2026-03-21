@@ -2,8 +2,7 @@ package com.project.auth.presentation.support.exception;
 
 import com.project.auth.application.support.exception.BusinessException;
 import com.project.auth.application.support.exception.CommonErrorCode;
-import com.project.auth.common.response.ApiResult;
-import org.springframework.http.HttpStatus;
+import com.project.auth.presentation.support.response.ApiResult;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -25,7 +24,7 @@ public class GlobalExceptionHandler {
             errors.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
 
-        return ResponseEntity.status(HttpStatus.valueOf(CommonErrorCode.INVALID_INPUT.status()))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INVALID_INPUT))
                 .body(ApiResult.failure(
                         CommonErrorCode.INVALID_INPUT.code(),
                         CommonErrorCode.INVALID_INPUT.message(),
@@ -35,13 +34,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResult<Void>> handleBusinessException(BusinessException exception) {
-        return ResponseEntity.status(HttpStatus.valueOf(exception.getErrorCode().status()))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(exception.getErrorCode()))
                 .body(ApiResult.failure(exception.getErrorCode().code(), exception.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResult<Void>> handleUnexpectedException(Exception exception) {
-        return ResponseEntity.status(HttpStatus.valueOf(CommonErrorCode.INTERNAL_SERVER_ERROR.status()))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INTERNAL_SERVER_ERROR))
                 .body(ApiResult.failure(
                         CommonErrorCode.INTERNAL_SERVER_ERROR.code(),
                         CommonErrorCode.INTERNAL_SERVER_ERROR.message()

@@ -46,26 +46,15 @@ jobs:
     needs: test
     runs-on: ubuntu-24.04
     permissions:
-      contents: write
+      contents: read
       packages: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with:
-          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-
-      - name: Set up Kustomize
-        run: |
-          KUSTOMIZE_VERSION=5.7.1
-          curl -sSL -o /tmp/kustomize.tar.gz \
-            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
-          tar -xzf /tmp/kustomize.tar.gz -C /tmp
-          sudo mv /tmp/kustomize /usr/local/bin/kustomize
-          kustomize version
 
       - name: Normalize image name
         run: |
@@ -83,26 +72,8 @@ jobs:
         uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           context: .
-          file: ./Dockerfile
+          file: ./deploy/docker/Dockerfile
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:dev
             ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-
-      - name: Update dev image tag for Argo CD
-        run: |
-          cd k8s/dev
-          kustomize edit set image "${IMAGE_NAME}=${IMAGE_NAME}:${IMAGE_TAG}"
-
-      - name: Commit and push manifest update
-        run: |
-          if git diff --quiet -- k8s/dev/kustomization.yaml; then
-            echo "No manifest change detected"
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add k8s/dev/kustomization.yaml
-          git commit -m "chore: update auth-server dev image to ${IMAGE_TAG}"
-          git push

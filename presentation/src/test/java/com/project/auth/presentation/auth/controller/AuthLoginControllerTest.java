@@ -2,9 +2,9 @@ package com.project.auth.presentation.auth.controller;
 
 import com.project.auth.application.auth.login.LoginResult;
 import com.project.auth.application.auth.login.port.in.LoginUseCase;
-import com.project.auth.application.support.code.SuccessCode;
 import com.project.auth.presentation.auth.dto.LoginRequest;
 import com.project.auth.presentation.auth.mapper.AuthPresentationMapper;
+import com.project.auth.presentation.support.response.ApiSuccessCode;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
@@ -37,7 +37,7 @@ class AuthLoginControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().success()).isTrue();
-        assertThat(response.getBody().code()).isEqualTo(SuccessCode.AUTH_LOGIN_SUCCEEDED.code());
+        assertThat(response.getBody().code()).isEqualTo(ApiSuccessCode.AUTH_LOGIN_SUCCEEDED.code());
         assertThat(response.getBody().data()).isNotNull();
         assertThat(response.getBody().data().user().email()).isEqualTo("tester@example.com");
         assertThat(response.getBody().data().token().issuer()).isEqualTo("project-auth-server");

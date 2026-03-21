@@ -2,7 +2,8 @@ package com.project.auth.config.auth.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.auth.application.auth.exception.AuthErrorCode;
-import com.project.auth.common.response.ApiResult;
+import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
+import com.project.auth.presentation.support.response.ApiResult;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
@@ -26,7 +27,7 @@ public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
             HttpServletResponse response,
             AuthenticationException exception
     ) throws IOException {
-        response.setStatus(AuthErrorCode.OAUTH_LOGIN_FAILED.status());
+        response.setStatus(ApiErrorHttpStatusMapper.map(AuthErrorCode.OAUTH_LOGIN_FAILED).value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         objectMapper.writeValue(

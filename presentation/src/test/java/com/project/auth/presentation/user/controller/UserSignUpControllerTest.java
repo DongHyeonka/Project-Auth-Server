@@ -1,8 +1,8 @@
 package com.project.auth.presentation.user.controller;
 
-import com.project.auth.application.support.code.SuccessCode;
 import com.project.auth.application.user.signup.SignUpResult;
 import com.project.auth.application.user.signup.port.in.SignUpUseCase;
+import com.project.auth.presentation.support.response.ApiSuccessCode;
 import com.project.auth.presentation.user.dto.SignUpRequest;
 import com.project.auth.presentation.user.mapper.UserPresentationMapper;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ class UserSignUpControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().success()).isTrue();
-        assertThat(response.getBody().code()).isEqualTo(SuccessCode.USER_SIGNED_UP.code());
+        assertThat(response.getBody().code()).isEqualTo(ApiSuccessCode.USER_SIGNED_UP.code());
         assertThat(response.getBody().data()).isNotNull();
         assertThat(response.getBody().data().email()).isEqualTo("tester@example.com");
     }
