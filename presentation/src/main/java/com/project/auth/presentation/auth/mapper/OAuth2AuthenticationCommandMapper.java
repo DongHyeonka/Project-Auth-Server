@@ -10,12 +10,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class OAuth2AuthenticationCommandMapper {
 
-    public OAuthLoginCommand toCommand(String provider, Authentication authentication) {
+    public OAuthLoginCommand toCommand(Authentication authentication) {
         OAuth2AuthenticationToken authenticationToken = requireAuthenticationToken(authentication);
         OidcUser oidcUser = requireOidcUser(authenticationToken.getPrincipal());
 
         return new OAuthLoginCommand(
-                provider,
+                "KEYCLOAK",
                 oidcUser.getSubject(),
                 oidcUser.getEmail(),
                 resolveUserName(oidcUser)
@@ -39,14 +39,7 @@ public class OAuth2AuthenticationCommandMapper {
     }
 
     private String resolveUserName(OidcUser oidcUser) {
-        if (oidcUser.getFullName() != null && !oidcUser.getFullName().isBlank()) {
-            return oidcUser.getFullName();
-        }
-
-        if (oidcUser.getPreferredUsername() != null && !oidcUser.getPreferredUsername().isBlank()) {
-            return oidcUser.getPreferredUsername();
-        }
-
-        return oidcUser.getEmail();
+        String name = oidcUser.getFullName();
+        return (name != null && !name.isBlank()) ? name : oidcUser.getPreferredUsername();
     }
 }

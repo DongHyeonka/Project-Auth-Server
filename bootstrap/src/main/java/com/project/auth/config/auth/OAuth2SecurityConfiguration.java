@@ -16,8 +16,8 @@ import org.springframework.security.web.SecurityFilterChain;
 public class OAuth2SecurityConfiguration {
 
     @Bean
-    public OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler(OAuth2LoginProperties oAuth2LoginProperties) {
-        return new OAuth2LoginSuccessHandler(oAuth2LoginProperties);
+    public OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler() {
+        return new OAuth2LoginSuccessHandler();
     }
 
     @Bean

@@ -78,13 +78,13 @@ class AuthOAuth2ControllerTest {
                 "keycloak-google"
         );
 
-        var response = controller.completeOAuthLogin("GOOGLE", authentication);
+        var response = controller.completeOAuthLogin(authentication);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().success()).isTrue();
         assertThat(response.getBody().data()).isNotNull();
-        assertThat(response.getBody().data().user().provider()).isEqualTo("GOOGLE");
+        assertThat(response.getBody().data().user().provider()).isEqualTo("KEYCLOAK");
         assertThat(response.getBody().data().user().email()).isEqualTo("tester@example.com");
         assertThat(response.getBody().data().token().issuer()).isEqualTo("project-auth-server");
     }
