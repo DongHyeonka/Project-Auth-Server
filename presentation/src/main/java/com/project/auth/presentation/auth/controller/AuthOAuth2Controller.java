@@ -16,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
@@ -57,11 +56,10 @@ public class AuthOAuth2Controller implements AuthOAuth2ApiDocs {
     @Operation(hidden = true)
     @GetMapping("/complete")
     public ResponseEntity<ApiResult<LoginResponse>> completeOAuthLogin(
-            @RequestParam("provider") String provider,
             Authentication authentication
     ) {
         LoginResult loginResult = oAuthLoginUseCase.login(
-                oAuth2AuthenticationCommandMapper.toCommand(provider, authentication)
+                oAuth2AuthenticationCommandMapper.toCommand(authentication)
         );
         LoginResponse response = authPresentationMapper.toResponse(loginResult);
 
