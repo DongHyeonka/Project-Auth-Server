@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.auth.config.auth.security.KeycloakIdpHintAuthorizationRequestResolver;
 import com.project.auth.config.auth.security.OAuth2LoginFailureHandler;
 import com.project.auth.config.auth.security.OAuth2LoginSuccessHandler;
+import com.project.auth.config.auth.security.SecurityExceptionHandler;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +27,11 @@ public class OAuth2SecurityConfiguration {
     }
 
     @Bean
+    public SecurityExceptionHandler securityExceptionHandler(ObjectMapper objectMapper) {
+        return new SecurityExceptionHandler(objectMapper);
+    }
+
+    @Bean
     public KeycloakIdpHintAuthorizationRequestResolver keycloakIdpHintAuthorizationRequestResolver(
             ClientRegistrationRepository clientRegistrationRepository,
             OAuth2LoginProperties oAuth2LoginProperties
@@ -38,7 +44,8 @@ public class OAuth2SecurityConfiguration {
             HttpSecurity http,
             KeycloakIdpHintAuthorizationRequestResolver keycloakIdpHintAuthorizationRequestResolver,
             OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
-            OAuth2LoginFailureHandler oAuth2LoginFailureHandler
+            OAuth2LoginFailureHandler oAuth2LoginFailureHandler,
+            SecurityExceptionHandler securityExceptionHandler
     ) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
@@ -70,6 +77,10 @@ public class OAuth2SecurityConfiguration {
                         )
                         .successHandler(oAuth2LoginSuccessHandler)
                         .failureHandler(oAuth2LoginFailureHandler)
+                )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(securityExceptionHandler)
+                        .accessDeniedHandler(securityExceptionHandler)
                 )
                 .build();
     }
