@@ -1,11 +1,14 @@
 package com.project.auth.presentation.auth.mapper;
 
 import com.project.auth.application.auth.exception.InvalidOAuthUserInfoException;
+import com.project.auth.application.auth.exception.UnsupportedOAuthProviderException;
 import com.project.auth.application.auth.oauth.login.OAuthLoginCommand;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Component;
+
+import java.util.Locale;
 
 @Component
 public class OAuth2AuthenticationCommandMapper {
@@ -15,7 +18,7 @@ public class OAuth2AuthenticationCommandMapper {
         OidcUser oidcUser = requireOidcUser(authenticationToken.getPrincipal());
 
         return new OAuthLoginCommand(
-                "KEYCLOAK",
+                resolveProvider(authenticationToken.getAuthorizedClientRegistrationId()),
                 oidcUser.getSubject(),
                 oidcUser.getEmail(),
                 resolveUserName(oidcUser)
@@ -41,5 +44,22 @@ public class OAuth2AuthenticationCommandMapper {
     private String resolveUserName(OidcUser oidcUser) {
         String name = oidcUser.getFullName();
         return (name != null && !name.isBlank()) ? name : oidcUser.getPreferredUsername();
+    }
+
+    private String resolveProvider(String registrationId) {
+        if (registrationId == null || registrationId.isBlank()) {
+            throw new InvalidOAuthUserInfoException();
+        }
+
+        String normalized = registrationId.trim().toLowerCase(Locale.ROOT);
+        if (normalized.contains("google")) {
+            return "GOOGLE";
+        }
+
+        if (normalized.contains("github")) {
+            return "GITHUB";
+        }
+
+        throw new UnsupportedOAuthProviderException();
     }
 }

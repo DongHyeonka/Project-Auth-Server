@@ -82,6 +82,14 @@ project-auth-server/
 └─ build files
 ```
 
+## 문서 작성 기준
+
+문서 작성 기준은 아래 문서를 source of truth로 사용합니다.
+
+- [docs/README.md](/home/donghyeon/dev/Project-Auth-Server/docs/README.md)
+- [docs/documentation-guide.md](/home/donghyeon/dev/Project-Auth-Server/docs/documentation-guide.md)
+- [docs/templates/README.md](/home/donghyeon/dev/Project-Auth-Server/docs/templates/README.md)
+
 ## 레이어 규칙
 
 ### 규칙 1
