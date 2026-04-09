@@ -20,6 +20,8 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'jakarta.servlet:jakarta.servlet-api'
     testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'
     testImplementation project(':domain')
     testRuntimeOnly 'com.h2database:h2'

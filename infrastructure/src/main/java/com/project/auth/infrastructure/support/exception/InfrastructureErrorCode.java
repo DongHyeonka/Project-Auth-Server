@@ -2,6 +2,10 @@ package com.project.auth.infrastructure.support.exception;
 
 import com.project.auth.application.support.exception.ErrorCode;
 
+/**
+ * Internal-only infrastructure failure codes used for logs, monitoring, and alert routing.
+ * External HTTP responses intentionally collapse these failures to COMMON-999.
+ */
 public enum InfrastructureErrorCode implements ErrorCode {
     JWT_SIGNING_FAILED("INFRA-001", "토큰 서명에 실패했습니다."),
     VAULT_TRANSIT_FAILED("INFRA-002", "외부 키 관리 서비스 호출에 실패했습니다."),
