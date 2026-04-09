@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * InfrastructureErrorCode is kept as an internal classification for logs and alerting.
  * Client responses are intentionally normalized to COMMON-999 to avoid exposing internal dependency details.
+ * This advice stays in bootstrap because moving it to presentation would create a
+ * presentation -> infrastructure dependency and break the layer rule.
  */
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)

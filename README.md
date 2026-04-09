@@ -111,6 +111,7 @@ project-auth-server/
 ### 규칙 5
 
 `bootstrap`이 전부 조립합니다.
+또한 `presentation`이 직접 의존할 수 없는 기술 예외나 security filter chain 예외를 HTTP 경계에서 번역하는 bootstrap 전용 adapter도 여기에 둡니다.
 
 ### 규칙 6
 
@@ -126,6 +127,7 @@ project-auth-server/
 
 - `bootstrap`
   - 애플리케이션 진입점과 설정 조립을 담당합니다.
+  - `InfrastructureExceptionHandler`, `SecurityExceptionHandler`처럼 `presentation`이 직접 알 수 없는 기술 타입을 HTTP 응답으로 번역하는 bootstrap 전용 adapter도 포함합니다.
 - `domain`
   - 엔티티, 값 객체, 도메인 예외, 도메인 정책을 둡니다.
 - `application`

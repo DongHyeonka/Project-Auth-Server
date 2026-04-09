@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ApiErrorHttpStatusMapperCoverageTest {
+class ApiErrorHttpStatusMapperClientFacingCoverageTest {
 
     static Stream<ErrorCode> allClientFacingErrorCodes() {
         return Stream.of(
@@ -24,20 +24,20 @@ class ApiErrorHttpStatusMapperCoverageTest {
         ).flatMap(s -> s);
     }
 
-    @ParameterizedTest(name = "{0} must be explicitly mapped")
+    @ParameterizedTest(name = "{0} should not fall through to default 500")
     @MethodSource("allClientFacingErrorCodes")
-    void every_error_code_should_have_explicit_http_status_mapping(ErrorCode errorCode) {
+    void client_facing_error_codes_should_not_fall_through_to_default_internal_server_error(ErrorCode errorCode) {
         HttpStatus status = ApiErrorHttpStatusMapper.map(errorCode);
 
         assertThat(status)
-                .as("ErrorCode %s (%s) must have a non-null mapping in ApiErrorHttpStatusMapper",
+                .as("Client-facing ErrorCode %s (%s) must produce a non-null HTTP status in ApiErrorHttpStatusMapper",
                         errorCode, errorCode.code())
                 .isNotNull();
 
         if (errorCode != CommonErrorCode.INTERNAL_SERVER_ERROR
                 && errorCode != CommonErrorCode.MESSAGE_NOT_WRITABLE) {
             assertThat(status)
-                    .as("ErrorCode %s (%s) should not fall through to default INTERNAL_SERVER_ERROR — add an explicit mapping in ApiErrorHttpStatusMapper",
+                    .as("Client-facing ErrorCode %s (%s) should not accidentally fall through to default INTERNAL_SERVER_ERROR in ApiErrorHttpStatusMapper",
                             errorCode, errorCode.code())
                     .isNotEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
