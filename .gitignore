@@ -40,3 +40,6 @@ out/
 .env.local
 .env.dev
 .env.prod
+.codex
+docs/
+AGENTS.md

@@ -1,5 +1,8 @@
 # Keycloak 로컬 설정
 
+이 문서는 로컬 개발 환경에서 Keycloak을 띄우고 연결하는 **runbook**입니다.  
+Keycloak의 아키텍처, Identity Broker 패턴, 프로젝트 적용 배경은 [docs/topics/03-keycloak/README.md](../../topics/03-keycloak/README.md)를 참고합니다.
+
 ## 기본 전제
 
 - `docker compose`는 `deploy/docker/docker-compose.yml`을 사용합니다.
