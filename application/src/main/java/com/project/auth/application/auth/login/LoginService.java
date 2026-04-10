@@ -7,10 +7,14 @@ import com.project.auth.application.auth.login.port.out.LoadLoginUserPort;
 import com.project.auth.application.auth.login.port.out.PasswordVerifierPort;
 import com.project.auth.domain.user.model.AuthProvider;
 import com.project.auth.domain.user.model.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
 public class LoginService implements LoginUseCase {
+
+    private static final Logger audit = LoggerFactory.getLogger("audit.auth");
 
     private final LoadLoginUserPort loadLoginUserPort;
     private final PasswordVerifierPort passwordVerifierPort;
@@ -37,16 +41,24 @@ public class LoginService implements LoginUseCase {
         ValidatedLoginCommand validatedCommand = LoginCommandValidator.validate(command);
 
         User user = loadLoginUserPort.findByEmail(validatedCommand.email())
-                .orElseThrow(InvalidUserCredentialsException::new);
+                .orElseThrow(() -> {
+                    audit.warn("LOGIN_FAILURE email={} reason=user_not_found", validatedCommand.email());
+                    return new InvalidUserCredentialsException();
+                });
 
         if (user.getProvider() != AuthProvider.LOCAL) {
+            audit.warn("LOGIN_FAILURE email={} reason=non_local_provider provider={}",
+                    validatedCommand.email(), user.getProvider());
             throw new InvalidUserCredentialsException();
         }
 
         if (!passwordVerifierPort.matches(validatedCommand.password(), user.getEncodedPassword())) {
+            audit.warn("LOGIN_FAILURE email={} reason=invalid_password", validatedCommand.email());
             throw new InvalidUserCredentialsException();
         }
 
-        return LoginResult.from(user, issueLoginTokenPort.issue(user));
+        LoginResult result = LoginResult.from(user, issueLoginTokenPort.issue(user));
+        audit.info("LOGIN_SUCCESS userId={} email={}", user.getId(), user.getEmail());
+        return result;
     }
 }

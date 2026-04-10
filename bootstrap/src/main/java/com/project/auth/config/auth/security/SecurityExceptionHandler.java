@@ -29,6 +29,7 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
     private static final String ANONYMOUS_PRINCIPAL = "anonymous";
 
     private static final Logger log = LoggerFactory.getLogger(SecurityExceptionHandler.class);
+    private static final Logger audit = LoggerFactory.getLogger("audit.auth");
 
     private final ObjectMapper objectMapper;
 
@@ -61,14 +62,17 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
             HttpServletResponse response,
             AccessDeniedException accessDeniedException
     ) throws IOException {
+        String principal = resolvePrincipal(request);
         log.warn(
                 "Access denied [traceId={}] [principal={}] for {} {}: {}",
                 currentTraceId(),
-                resolvePrincipal(request),
+                principal,
                 request.getMethod(),
                 request.getRequestURI(),
                 accessDeniedException.getMessage()
         );
+        audit.warn("ACCESS_DENIED principal={} method={} uri={}",
+                principal, request.getMethod(), request.getRequestURI());
 
         HttpStatus status = ApiErrorHttpStatusMapper.map(AuthErrorCode.ACCESS_DENIED);
         writeErrorResponse(response, status, AuthErrorCode.ACCESS_DENIED);

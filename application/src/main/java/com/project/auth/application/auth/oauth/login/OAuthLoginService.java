@@ -8,6 +8,8 @@ import com.project.auth.application.auth.oauth.login.port.out.LoadOAuthUserPort;
 import com.project.auth.application.auth.oauth.login.port.out.RegisterOAuthUserPort;
 import com.project.auth.application.user.exception.DuplicateUserEmailException;
 import com.project.auth.domain.user.model.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -15,6 +17,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class OAuthLoginService implements OAuthLoginUseCase {
+
+    private static final Logger audit = LoggerFactory.getLogger("audit.auth");
 
     private final LoadOAuthUserPort loadOAuthUserPort;
     private final RegisterOAuthUserPort registerOAuthUserPort;
@@ -48,11 +52,16 @@ public class OAuthLoginService implements OAuthLoginUseCase {
                 )
                 .orElseGet(() -> registerOAuthUser(validatedCommand));
 
-        return LoginResult.from(user, issueOAuthLoginTokenPort.issue(user));
+        LoginResult result = LoginResult.from(user, issueOAuthLoginTokenPort.issue(user));
+        audit.info("OAUTH_LOGIN_SUCCESS userId={} email={} provider={}",
+                user.getId(), user.getEmail(), user.getProvider());
+        return result;
     }
 
     private User registerOAuthUser(ValidatedOAuthLoginCommand validatedCommand) {
         if (loadOAuthUserPort.existsByEmail(validatedCommand.email())) {
+            audit.warn("OAUTH_LOGIN_FAILURE email={} provider={} reason=email_conflict",
+                    validatedCommand.email(), validatedCommand.provider());
             throw new OAuthAccountConflictException();
         }
 
@@ -68,6 +77,8 @@ public class OAuthLoginService implements OAuthLoginUseCase {
         try {
             return registerOAuthUserPort.save(user);
         } catch (DuplicateUserEmailException exception) {
+            audit.warn("OAUTH_LOGIN_FAILURE email={} provider={} reason=duplicate_email_race_condition",
+                    validatedCommand.email(), validatedCommand.provider());
             throw new OAuthAccountConflictException();
         }
     }

@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
 
     private static final Logger log = LoggerFactory.getLogger(OAuth2LoginFailureHandler.class);
+    private static final Logger audit = LoggerFactory.getLogger("audit.auth");
 
     private final ObjectMapper objectMapper;
 
@@ -33,6 +34,8 @@ public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
     ) throws IOException {
         log.warn("OAuth2 login failed for {} {}: {}",
                 request.getMethod(), request.getRequestURI(), exception.getMessage(), exception);
+        audit.warn("OAUTH_AUTHENTICATION_FAILURE method={} uri={} reason={}",
+                request.getMethod(), request.getRequestURI(), exception.getMessage());
 
         response.setStatus(ApiErrorHttpStatusMapper.map(AuthErrorCode.OAUTH_LOGIN_FAILED).value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

@@ -16,4 +16,13 @@ public class WebConfiguration {
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
         return registration;
     }
+
+    @Bean
+    public FilterRegistrationBean<RequestAccessLogFilter> requestAccessLogFilter() {
+        FilterRegistrationBean<RequestAccessLogFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new RequestAccessLogFilter());
+        registration.addUrlPatterns("/*");
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
+        return registration;
+    }
 }

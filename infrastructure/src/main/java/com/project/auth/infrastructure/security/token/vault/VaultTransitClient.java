@@ -15,8 +15,12 @@ import java.util.Objects;
 
 import com.project.auth.infrastructure.support.exception.InfrastructureErrorCode;
 import com.project.auth.infrastructure.support.exception.InfrastructureException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class VaultTransitClient {
+
+    private static final Logger log = LoggerFactory.getLogger(VaultTransitClient.class);
 
     private final String address;
     private final String token;
@@ -57,6 +61,7 @@ public class VaultTransitClient {
             throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Vault transit key metadata does not contain a usable public key.");
         }
 
+        log.info("Vault transit key metadata loaded: keyName={}, version={}", transitKeyName, latestVersion);
         return new VaultTransitKeyMetadata(latestVersion, publicKey);
     }
 

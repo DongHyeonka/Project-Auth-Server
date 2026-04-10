@@ -5,6 +5,8 @@ import com.project.auth.config.auth.security.KeycloakIdpHintAuthorizationRequest
 import com.project.auth.config.auth.security.OAuth2LoginFailureHandler;
 import com.project.auth.config.auth.security.OAuth2LoginSuccessHandler;
 import com.project.auth.config.auth.security.SecurityExceptionHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +17,8 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableConfigurationProperties(OAuth2LoginProperties.class)
 public class OAuth2SecurityConfiguration {
+
+    private static final Logger log = LoggerFactory.getLogger(OAuth2SecurityConfiguration.class);
 
     @Bean
     public OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler() {
@@ -36,6 +40,9 @@ public class OAuth2SecurityConfiguration {
             ClientRegistrationRepository clientRegistrationRepository,
             OAuth2LoginProperties oAuth2LoginProperties
     ) {
+        log.info("OAuth2 provider wiring: google={} (idpHint={}), github={} (idpHint={})",
+                oAuth2LoginProperties.googleRegistrationId(), oAuth2LoginProperties.googleIdpHint(),
+                oAuth2LoginProperties.githubRegistrationId(), oAuth2LoginProperties.githubIdpHint());
         return new KeycloakIdpHintAuthorizationRequestResolver(clientRegistrationRepository, oAuth2LoginProperties);
     }
 
