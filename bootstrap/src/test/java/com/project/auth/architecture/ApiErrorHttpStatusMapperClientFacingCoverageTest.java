@@ -5,6 +5,7 @@ import com.project.auth.application.support.exception.CommonErrorCode;
 import com.project.auth.application.support.exception.ErrorCode;
 import com.project.auth.application.user.exception.UserErrorCode;
 import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
+import com.project.auth.presentation.support.exception.PresentationErrorCode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ class ApiErrorHttpStatusMapperClientFacingCoverageTest {
     static Stream<ErrorCode> allClientFacingErrorCodes() {
         return Stream.of(
                 Arrays.stream(CommonErrorCode.values()),
+                Arrays.stream(PresentationErrorCode.values()),
                 Arrays.stream(AuthErrorCode.values()),
                 Arrays.stream(UserErrorCode.values())
         ).flatMap(s -> s);
@@ -35,7 +37,7 @@ class ApiErrorHttpStatusMapperClientFacingCoverageTest {
                 .isNotNull();
 
         if (errorCode != CommonErrorCode.INTERNAL_SERVER_ERROR
-                && errorCode != CommonErrorCode.MESSAGE_NOT_WRITABLE) {
+                && errorCode != PresentationErrorCode.MESSAGE_NOT_WRITABLE) {
             assertThat(status)
                     .as("Client-facing ErrorCode %s (%s) should not accidentally fall through to default INTERNAL_SERVER_ERROR in ApiErrorHttpStatusMapper",
                             errorCode, errorCode.code())

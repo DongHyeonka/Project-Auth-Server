@@ -6,6 +6,7 @@ import com.project.auth.config.web.TraceIdFilter;
 import com.project.auth.domain.user.exception.DomainException;
 import com.project.auth.infrastructure.support.exception.InfrastructureErrorCode;
 import com.project.auth.infrastructure.support.exception.InfrastructureException;
+import com.project.auth.presentation.support.exception.PresentationErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -94,8 +95,8 @@ class ExceptionHandlingIntegrationTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(header().exists("X-Trace-Id"))
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value(CommonErrorCode.INVALID_REQUEST_BODY.code()))
-                .andExpect(jsonPath("$.message").value(CommonErrorCode.INVALID_REQUEST_BODY.message()))
+                .andExpect(jsonPath("$.code").value(PresentationErrorCode.INVALID_REQUEST_BODY.code()))
+                .andExpect(jsonPath("$.message").value(PresentationErrorCode.INVALID_REQUEST_BODY.message()))
                 .andExpect(jsonPath("$.traceId", not(blankOrNullString())))
                 .andExpect(jsonPath("$.timestamp", not(blankOrNullString())));
     }
@@ -107,10 +108,32 @@ class ExceptionHandlingIntegrationTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(header().exists("X-Trace-Id"))
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value(CommonErrorCode.METHOD_NOT_ALLOWED.code()))
-                .andExpect(jsonPath("$.message").value(CommonErrorCode.METHOD_NOT_ALLOWED.message()))
+                .andExpect(jsonPath("$.code").value(PresentationErrorCode.METHOD_NOT_ALLOWED.code()))
+                .andExpect(jsonPath("$.message").value(PresentationErrorCode.METHOD_NOT_ALLOWED.message()))
                 .andExpect(jsonPath("$.traceId", not(blankOrNullString())))
                 .andExpect(jsonPath("$.timestamp", not(blankOrNullString())));
+    }
+
+    @Test
+    void client_supplied_trace_id_is_ignored_and_server_generated_value_is_returned() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .header("X-Trace-Id", "client-provided-trace")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{invalid"))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Trace-Id"))
+                .andExpect(header().string("X-Trace-Id", not("client-provided-trace")))
+                .andExpect(jsonPath("$.traceId", not("client-provided-trace")));
+    }
+
+    @Test
+    void missing_required_header_returns_header_specific_error_code() throws Exception {
+        mockMvc.perform(get("/test-support/header-required").with(user("user@example.com").roles("USER")))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(PresentationErrorCode.MISSING_HEADER.code()))
+                .andExpect(jsonPath("$.message").value(PresentationErrorCode.MISSING_HEADER.message()));
     }
 
     @Test
@@ -133,14 +156,14 @@ class ExceptionHandlingIntegrationTest {
     }
 
     @Test
-    void domain_exception_returns_safe_user_facing_message() throws Exception {
+    void leaked_domain_exception_falls_back_to_common_999_without_exposing_message() throws Exception {
         mockMvc.perform(get("/test-support/domain").with(user("user@example.com").roles("USER")))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isInternalServerError())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(header().exists("X-Trace-Id"))
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value(CommonErrorCode.DOMAIN_RULE_VIOLATION.code()))
-                .andExpect(jsonPath("$.message").value("테스트용 사용자 노출 메시지"))
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.INTERNAL_SERVER_ERROR.code()))
+                .andExpect(jsonPath("$.message").value(CommonErrorCode.INTERNAL_SERVER_ERROR.message()))
                 .andExpect(jsonPath("$.traceId", not(blankOrNullString())))
                 .andExpect(jsonPath("$.timestamp", not(blankOrNullString())));
     }
@@ -178,6 +201,13 @@ class ExceptionHandlingIntegrationTest {
         @GetMapping("/test-support/domain")
         String domainFailure() {
             throw new TestDomainException("테스트용 사용자 노출 메시지");
+        }
+
+        @GetMapping("/test-support/header-required")
+        String headerRequired(
+                @org.springframework.web.bind.annotation.RequestHeader("X-Test-Header") String headerValue
+        ) {
+            return headerValue;
         }
     }
 

@@ -3,7 +3,6 @@ package com.project.auth.presentation.support.exception;
 import com.project.auth.application.auth.exception.AuthErrorCode;
 import com.project.auth.application.support.exception.BusinessException;
 import com.project.auth.application.support.exception.CommonErrorCode;
-import com.project.auth.domain.user.exception.DomainException;
 import com.project.auth.presentation.support.response.ApiResult;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -30,17 +29,6 @@ public class ApplicationExceptionHandler {
     private static final String ANONYMOUS_PRINCIPAL = "anonymous";
 
     private static final Logger log = LoggerFactory.getLogger(ApplicationExceptionHandler.class);
-
-    @ExceptionHandler(DomainException.class)
-    public ResponseEntity<ApiResult<Void>> handleDomainException(DomainException exception) {
-        log.warn("Unhandled domain exception exposed to client: {}", exception.getMessage());
-
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.DOMAIN_RULE_VIOLATION))
-                .body(ApiResult.failure(
-                        CommonErrorCode.DOMAIN_RULE_VIOLATION.code(),
-                        exception.getMessage()
-                ));
-    }
 
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<ApiResult<Void>> handleAuthorizationDeniedException(
@@ -77,10 +65,10 @@ public class ApplicationExceptionHandler {
     ) {
         log.error("Response body not writable: {}", exception.getMessage(), exception);
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.MESSAGE_NOT_WRITABLE))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.MESSAGE_NOT_WRITABLE))
                 .body(ApiResult.failure(
-                        CommonErrorCode.MESSAGE_NOT_WRITABLE.code(),
-                        CommonErrorCode.MESSAGE_NOT_WRITABLE.message()
+                        PresentationErrorCode.MESSAGE_NOT_WRITABLE.code(),
+                        PresentationErrorCode.MESSAGE_NOT_WRITABLE.message()
                 ));
     }
 

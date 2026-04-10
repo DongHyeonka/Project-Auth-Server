@@ -1,6 +1,5 @@
 package com.project.auth.presentation.support.exception;
 
-import com.project.auth.application.support.exception.CommonErrorCode;
 import com.project.auth.presentation.support.response.ApiResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +12,7 @@ import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -30,10 +30,10 @@ public class RequestExceptionHandler {
     ) {
         log.warn("Request body not readable: {}", exception.getMessage());
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INVALID_REQUEST_BODY))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.INVALID_REQUEST_BODY))
                 .body(ApiResult.failure(
-                        CommonErrorCode.INVALID_REQUEST_BODY.code(),
-                        CommonErrorCode.INVALID_REQUEST_BODY.message()
+                        PresentationErrorCode.INVALID_REQUEST_BODY.code(),
+                        PresentationErrorCode.INVALID_REQUEST_BODY.message()
                 ));
     }
 
@@ -43,10 +43,10 @@ public class RequestExceptionHandler {
     ) {
         log.warn("Method not supported: {} {}", exception.getMethod(), exception.getMessage());
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.METHOD_NOT_ALLOWED))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.METHOD_NOT_ALLOWED))
                 .body(ApiResult.failure(
-                        CommonErrorCode.METHOD_NOT_ALLOWED.code(),
-                        CommonErrorCode.METHOD_NOT_ALLOWED.message()
+                        PresentationErrorCode.METHOD_NOT_ALLOWED.code(),
+                        PresentationErrorCode.METHOD_NOT_ALLOWED.message()
                 ));
     }
 
@@ -56,10 +56,10 @@ public class RequestExceptionHandler {
     ) {
         log.warn("Missing request parameter: {}", exception.getParameterName());
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.MISSING_PARAMETER))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.MISSING_PARAMETER))
                 .body(ApiResult.failure(
-                        CommonErrorCode.MISSING_PARAMETER.code(),
-                        CommonErrorCode.MISSING_PARAMETER.message()
+                        PresentationErrorCode.MISSING_PARAMETER.code(),
+                        PresentationErrorCode.MISSING_PARAMETER.message()
                 ));
     }
 
@@ -69,10 +69,10 @@ public class RequestExceptionHandler {
     ) {
         log.warn("Type mismatch for parameter '{}': {}", exception.getPropertyName(), exception.getMessage());
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INVALID_INPUT))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.INVALID_INPUT))
                 .body(ApiResult.failure(
-                        CommonErrorCode.INVALID_INPUT.code(),
-                        CommonErrorCode.INVALID_INPUT.message()
+                        PresentationErrorCode.INVALID_INPUT.code(),
+                        PresentationErrorCode.INVALID_INPUT.message()
                 ));
     }
 
@@ -82,10 +82,10 @@ public class RequestExceptionHandler {
     ) {
         log.warn("Unsupported media type: {}", exception.getContentType());
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.UNSUPPORTED_MEDIA_TYPE))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.UNSUPPORTED_MEDIA_TYPE))
                 .body(ApiResult.failure(
-                        CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.code(),
-                        CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.message()
+                        PresentationErrorCode.UNSUPPORTED_MEDIA_TYPE.code(),
+                        PresentationErrorCode.UNSUPPORTED_MEDIA_TYPE.message()
                 ));
     }
 
@@ -95,10 +95,23 @@ public class RequestExceptionHandler {
     ) {
         log.warn("Not acceptable media type: {}", exception.getMessage());
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.NOT_ACCEPTABLE))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.NOT_ACCEPTABLE))
                 .body(ApiResult.failure(
-                        CommonErrorCode.NOT_ACCEPTABLE.code(),
-                        CommonErrorCode.NOT_ACCEPTABLE.message()
+                        PresentationErrorCode.NOT_ACCEPTABLE.code(),
+                        PresentationErrorCode.NOT_ACCEPTABLE.message()
+                ));
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ApiResult<Void>> handleMissingRequestHeaderException(
+            MissingRequestHeaderException exception
+    ) {
+        log.warn("Missing request header: {}", exception.getHeaderName());
+
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.MISSING_HEADER))
+                .body(ApiResult.failure(
+                        PresentationErrorCode.MISSING_HEADER.code(),
+                        PresentationErrorCode.MISSING_HEADER.message()
                 ));
     }
 
@@ -108,10 +121,10 @@ public class RequestExceptionHandler {
     ) {
         log.warn("Request binding failed: {}", exception.getMessage());
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.MISSING_HEADER))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.REQUEST_BINDING_FAILED))
                 .body(ApiResult.failure(
-                        CommonErrorCode.MISSING_HEADER.code(),
-                        CommonErrorCode.MISSING_HEADER.message()
+                        PresentationErrorCode.REQUEST_BINDING_FAILED.code(),
+                        PresentationErrorCode.REQUEST_BINDING_FAILED.message()
                 ));
     }
 
@@ -121,10 +134,10 @@ public class RequestExceptionHandler {
     ) {
         log.warn("No resource found: {}", exception.getMessage());
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.RESOURCE_NOT_FOUND))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.RESOURCE_NOT_FOUND))
                 .body(ApiResult.failure(
-                        CommonErrorCode.RESOURCE_NOT_FOUND.code(),
-                        CommonErrorCode.RESOURCE_NOT_FOUND.message()
+                        PresentationErrorCode.RESOURCE_NOT_FOUND.code(),
+                        PresentationErrorCode.RESOURCE_NOT_FOUND.message()
                 ));
     }
 }

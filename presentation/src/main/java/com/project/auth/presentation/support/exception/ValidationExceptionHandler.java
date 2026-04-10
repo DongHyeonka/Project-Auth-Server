@@ -1,6 +1,5 @@
 package com.project.auth.presentation.support.exception;
 
-import com.project.auth.application.support.exception.CommonErrorCode;
 import com.project.auth.presentation.support.response.ApiResult;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -39,10 +38,10 @@ public class ValidationExceptionHandler {
 
         log.warn("Validation failed: {}", errors);
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INVALID_INPUT))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.INVALID_INPUT))
                 .body(ApiResult.failure(
-                        CommonErrorCode.INVALID_INPUT.code(),
-                        CommonErrorCode.INVALID_INPUT.message(),
+                        PresentationErrorCode.INVALID_INPUT.code(),
+                        PresentationErrorCode.INVALID_INPUT.message(),
                         errors
                 ));
     }
@@ -61,10 +60,10 @@ public class ValidationExceptionHandler {
 
         log.warn("Constraint violation: {}", errors);
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.CONSTRAINT_VIOLATION))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.CONSTRAINT_VIOLATION))
                 .body(ApiResult.failure(
-                        CommonErrorCode.CONSTRAINT_VIOLATION.code(),
-                        CommonErrorCode.CONSTRAINT_VIOLATION.message(),
+                        PresentationErrorCode.CONSTRAINT_VIOLATION.code(),
+                        PresentationErrorCode.CONSTRAINT_VIOLATION.message(),
                         errors
                 ));
     }
@@ -85,10 +84,10 @@ public class ValidationExceptionHandler {
 
         log.warn("Handler method validation failed: {}", errors);
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INVALID_INPUT))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.INVALID_INPUT))
                 .body(ApiResult.failure(
-                        CommonErrorCode.INVALID_INPUT.code(),
-                        CommonErrorCode.INVALID_INPUT.message(),
+                        PresentationErrorCode.INVALID_INPUT.code(),
+                        PresentationErrorCode.INVALID_INPUT.message(),
                         errors
                 ));
     }

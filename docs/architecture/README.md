@@ -161,7 +161,7 @@ flowchart TD
 
 - `domain`은 Spring/JPA/Servlet에 의존하지 않는다
 - `application`은 `presentation`/`infrastructure`에 의존하지 않는다
-- `presentation`은 `infrastructure`에 직접 의존하지 않는다
+- `presentation`은 `domain`/`infrastructure`에 직접 의존하지 않는다
 - `bootstrap`만 `config` 패키지를 조립 지점으로 사용한다
 
 즉 이 문서는 "설계 설명"이고, ArchUnit은 "설계 위반 방지 장치"입니다.
