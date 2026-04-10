@@ -7,7 +7,9 @@ public enum AuthErrorCode implements ErrorCode {
     OAUTH_USER_INFO_INVALID("AUTH-002", "소셜 로그인 사용자 정보가 올바르지 않습니다."),
     OAUTH_ACCOUNT_CONFLICT("AUTH-003", "동일한 이메일의 기존 계정이 있어 소셜 로그인을 진행할 수 없습니다."),
     OAUTH_LOGIN_FAILED("AUTH-004", "소셜 로그인에 실패했습니다."),
-    UNSUPPORTED_OAUTH_PROVIDER("AUTH-005", "지원하지 않는 OAuth2 공급자입니다.");
+    UNSUPPORTED_OAUTH_PROVIDER("AUTH-005", "지원하지 않는 OAuth2 공급자입니다."),
+    AUTHENTICATION_REQUIRED("AUTH-006", "인증이 필요합니다."),
+    ACCESS_DENIED("AUTH-007", "접근 권한이 없습니다.");
 
     private final String code;
     private final String message;

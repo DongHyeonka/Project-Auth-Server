@@ -14,6 +14,7 @@ public final class ApiErrorHttpStatusMapper {
     public static HttpStatus map(ErrorCode errorCode) {
         return switch (errorCode) {
             case CommonErrorCode commonErrorCode -> mapCommon(commonErrorCode);
+            case PresentationErrorCode presentationErrorCode -> mapPresentation(presentationErrorCode);
             case AuthErrorCode authErrorCode -> mapAuth(authErrorCode);
             case UserErrorCode userErrorCode -> mapUser(userErrorCode);
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
@@ -22,16 +23,27 @@ public final class ApiErrorHttpStatusMapper {
 
     private static HttpStatus mapCommon(CommonErrorCode errorCode) {
         return switch (errorCode) {
-            case INVALID_INPUT -> HttpStatus.BAD_REQUEST;
             case INTERNAL_SERVER_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
+    }
+
+    private static HttpStatus mapPresentation(PresentationErrorCode errorCode) {
+        return switch (errorCode) {
+            case INVALID_INPUT, INVALID_REQUEST_BODY, MISSING_PARAMETER, CONSTRAINT_VIOLATION, MISSING_HEADER, REQUEST_BINDING_FAILED -> HttpStatus.BAD_REQUEST;
+            case METHOD_NOT_ALLOWED -> HttpStatus.METHOD_NOT_ALLOWED;
+            case RESOURCE_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case UNSUPPORTED_MEDIA_TYPE -> HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+            case NOT_ACCEPTABLE -> HttpStatus.NOT_ACCEPTABLE;
+            case MESSAGE_NOT_WRITABLE -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
     }
 
     private static HttpStatus mapAuth(AuthErrorCode errorCode) {
         return switch (errorCode) {
-            case INVALID_CREDENTIALS, OAUTH_LOGIN_FAILED -> HttpStatus.UNAUTHORIZED;
+            case INVALID_CREDENTIALS, OAUTH_LOGIN_FAILED, AUTHENTICATION_REQUIRED -> HttpStatus.UNAUTHORIZED;
             case OAUTH_USER_INFO_INVALID, UNSUPPORTED_OAUTH_PROVIDER -> HttpStatus.BAD_REQUEST;
             case OAUTH_ACCOUNT_CONFLICT -> HttpStatus.CONFLICT;
+            case ACCESS_DENIED -> HttpStatus.FORBIDDEN;
         };
     }
 

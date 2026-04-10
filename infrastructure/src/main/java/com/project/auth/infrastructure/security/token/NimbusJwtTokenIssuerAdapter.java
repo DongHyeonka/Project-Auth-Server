@@ -11,6 +11,8 @@ import com.project.auth.application.auth.login.port.out.IssueLoginTokenPort;
 import com.project.auth.application.auth.oauth.login.port.out.IssueOAuthLoginTokenPort;
 import com.project.auth.application.auth.token.IssuedAccessToken;
 import com.project.auth.domain.user.model.User;
+import com.project.auth.infrastructure.support.exception.InfrastructureErrorCode;
+import com.project.auth.infrastructure.support.exception.InfrastructureException;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -84,7 +86,7 @@ public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort, IssueOA
             signedJWT.sign(jwtSigner);
             return signedJWT.serialize();
         } catch (JOSEException exception) {
-            throw new IllegalStateException("Failed to sign JWT access token.", exception);
+            throw new InfrastructureException(InfrastructureErrorCode.JWT_SIGNING_FAILED, "Failed to sign JWT access token.", exception);
         }
     }
 }

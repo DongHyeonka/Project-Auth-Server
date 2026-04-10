@@ -82,7 +82,9 @@ HTTP 입출력과 API 응답 계약만 담당합니다.
 - Request/Response DTO
 - `ApiResult`
 - `ApiSuccessCode`
-- `GlobalExceptionHandler`
+- `ValidationExceptionHandler`
+- `RequestExceptionHandler`
+- `ApplicationExceptionHandler`
 - `ApiErrorHttpStatusMapper`
 
 즉 API 응답 모양과 HTTP status는 이 레이어의 책임입니다.
@@ -105,9 +107,14 @@ HTTP 입출력과 API 응답 계약만 담당합니다.
 - Spring Boot entrypoint
 - configuration
 - security wiring
+- `presentation`이 직접 의존할 수 없는 기술 예외를 HTTP 경계에서 번역하는 bootstrap 전용 web adapter
 - migration 전용 app entrypoint
 
 이 프로젝트에서는 일반 웹 애플리케이션 진입점과 별도로 `MigrationApplication`을 둬서 DB migration을 전용 실행 단위로 분리했습니다.
+
+`InfrastructureExceptionHandler`가 bootstrap에 있는 이유도 여기 있습니다.
+이 핸들러는 HTTP 응답을 만들지만, 이를 presentation으로 옮기면 `presentation -> infrastructure` 의존이 생겨 현재 ArchUnit 규칙을 깨게 됩니다.
+그래서 security filter chain 예외나 `InfrastructureException`처럼 presentation이 직접 알 수 없는 타입을 HTTP로 번역하는 adapter는 bootstrap이 맡습니다.
 
 ## How
 
@@ -154,7 +161,7 @@ flowchart TD
 
 - `domain`은 Spring/JPA/Servlet에 의존하지 않는다
 - `application`은 `presentation`/`infrastructure`에 의존하지 않는다
-- `presentation`은 `infrastructure`에 직접 의존하지 않는다
+- `presentation`은 `domain`/`infrastructure`에 직접 의존하지 않는다
 - `bootstrap`만 `config` 패키지를 조립 지점으로 사용한다
 
 즉 이 문서는 "설계 설명"이고, ArchUnit은 "설계 위반 방지 장치"입니다.

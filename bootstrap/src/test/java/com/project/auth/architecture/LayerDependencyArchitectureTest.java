@@ -36,10 +36,13 @@ class LayerDependencyArchitectureTest {
                     );
 
     @ArchTest
-    static final ArchRule presentation_must_not_depend_on_infrastructure =
+    static final ArchRule presentation_must_not_depend_on_domain_or_infrastructure =
             noClasses()
                     .that().resideInAnyPackage("com.project.auth.presentation..")
-                    .should().dependOnClassesThat().resideInAnyPackage("com.project.auth.infrastructure..");
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "com.project.auth.domain..",
+                            "com.project.auth.infrastructure.."
+                    );
 
     @ArchTest
     static final ArchRule bootstrap_is_the_only_layer_that_may_depend_on_config_packages =

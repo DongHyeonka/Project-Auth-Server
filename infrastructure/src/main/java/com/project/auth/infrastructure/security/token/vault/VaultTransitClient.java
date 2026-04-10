@@ -13,6 +13,9 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.Objects;
 
+import com.project.auth.infrastructure.support.exception.InfrastructureErrorCode;
+import com.project.auth.infrastructure.support.exception.InfrastructureException;
+
 public class VaultTransitClient {
 
     private final String address;
@@ -41,7 +44,7 @@ public class VaultTransitClient {
         ).path("data");
 
         if (!data.path("supports_signing").asBoolean(false)) {
-            throw new IllegalStateException("Configured Vault transit key does not support signing.");
+            throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Configured Vault transit key does not support signing.");
         }
 
         int latestVersion = data.path("latest_version").asInt();
@@ -51,7 +54,7 @@ public class VaultTransitClient {
                 .asText();
 
         if (latestVersion <= 0 || publicKey.isBlank()) {
-            throw new IllegalStateException("Vault transit key metadata does not contain a usable public key.");
+            throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Vault transit key metadata does not contain a usable public key.");
         }
 
         return new VaultTransitKeyMetadata(latestVersion, publicKey);
@@ -74,7 +77,7 @@ public class VaultTransitClient {
 
         String signature = data.path("signature").asText();
         if (signature.isBlank()) {
-            throw new IllegalStateException("Vault transit signing response did not contain a signature.");
+            throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Vault transit signing response did not contain a signature.");
         }
 
         return signature;
@@ -84,14 +87,15 @@ public class VaultTransitClient {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
-                throw new IllegalStateException(
+                throw new InfrastructureException(
+                        InfrastructureErrorCode.VAULT_TRANSIT_FAILED,
                         "Vault transit request failed with status " + response.statusCode() + "."
                 );
             }
 
             JsonNode root = objectMapper.readTree(response.body());
             if (root.has("errors") && root.path("errors").isArray() && !root.path("errors").isEmpty()) {
-                throw new IllegalStateException("Vault transit request failed: " + root.path("errors"));
+                throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Vault transit request failed: " + root.path("errors"));
             }
 
             return root;
@@ -99,7 +103,7 @@ public class VaultTransitClient {
             if (exception instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            throw new IllegalStateException("Failed to call Vault transit API.", exception);
+            throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Failed to call Vault transit API.", exception);
         }
     }
 
@@ -107,7 +111,7 @@ public class VaultTransitClient {
         try {
             return objectMapper.writeValueAsString(body);
         } catch (IOException exception) {
-            throw new IllegalStateException("Failed to serialize Vault transit request body.", exception);
+            throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Failed to serialize Vault transit request body.", exception);
         }
     }
 
