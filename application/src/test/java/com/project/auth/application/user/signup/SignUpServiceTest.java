@@ -1,5 +1,7 @@
 package com.project.auth.application.user.signup;
 
+import com.project.auth.application.support.audit.AuthAuditEvent;
+import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import com.project.auth.application.user.exception.DuplicateUserEmailException;
 import com.project.auth.application.user.exception.InvalidUserSignUpException;
 import com.project.auth.application.user.signup.port.out.PasswordHasherPort;
@@ -12,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,14 +25,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SignUpServiceTest {
 
     private SignUpService signUpService;
+    private RecordingAuthAuditEventPublisher auditEventPublisher;
 
     @BeforeEach
     void setUp() {
         RegisterUserPort registerUserPort = new FakeUserRepository();
         PasswordHasherPort passwordHasherPort = rawPassword -> "encoded-" + rawPassword;
         Clock fixedClock = Clock.fixed(Instant.parse("2026-03-13T00:00:00Z"), ZoneOffset.UTC);
+        auditEventPublisher = new RecordingAuthAuditEventPublisher();
 
-        signUpService = new SignUpService(registerUserPort, passwordHasherPort, fixedClock);
+        signUpService = new SignUpService(registerUserPort, passwordHasherPort, fixedClock, auditEventPublisher);
     }
 
     @Test
@@ -41,6 +47,12 @@ class SignUpServiceTest {
         assertThat(result.name()).isEqualTo("테스터");
         assertThat(result.provider()).isEqualTo("LOCAL");
         assertThat(result.registeredAt()).isEqualTo(Instant.parse("2026-03-13T00:00:00Z"));
+        assertThat(auditEventPublisher.events)
+                .singleElement()
+                .satisfies(event -> {
+                    assertThat(event.eventType()).isEqualTo("SIGNUP_SUCCESS");
+                    assertThat(event.fields()).containsEntry("email", "tester@example.com");
+                });
     }
 
     @Test
@@ -51,6 +63,8 @@ class SignUpServiceTest {
 
         assertThatThrownBy(() -> signUpService.signUp(command))
                 .isInstanceOf(DuplicateUserEmailException.class);
+        assertThat(auditEventPublisher.events.getLast().eventType()).isEqualTo("SIGNUP_FAILURE");
+        assertThat(auditEventPublisher.events.getLast().fields()).containsEntry("reason", "duplicate_email");
     }
 
     @Test
@@ -61,6 +75,16 @@ class SignUpServiceTest {
                 .isInstanceOf(InvalidUserSignUpException.class)
                 .extracting(exception -> ((InvalidUserSignUpException) exception).getErrorCode().code())
                 .isEqualTo("USER-001");
+    }
+
+    private static final class RecordingAuthAuditEventPublisher implements AuthAuditEventPublisher {
+
+        private final List<AuthAuditEvent> events = new ArrayList<>();
+
+        @Override
+        public void publish(AuthAuditEvent event) {
+            events.add(event);
+        }
     }
 
     private static final class FakeUserRepository implements RegisterUserPort {

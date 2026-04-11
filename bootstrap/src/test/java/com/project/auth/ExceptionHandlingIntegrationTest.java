@@ -81,7 +81,8 @@ class ExceptionHandlingIntegrationTest {
                 .andExpect(jsonPath("$.traceId", not(blankOrNullString())))
                 .andExpect(jsonPath("$.timestamp", not(blankOrNullString())));
 
-        assertThat(output).contains("Access denied [traceId=");
+        assertThat(output).contains("traceId=");
+        assertThat(output).contains("Access denied [principal=alice@example.com]");
         assertThat(output).contains("principal=alice@example.com");
         assertThat(output).contains("GET /test-support/admin");
     }
@@ -150,7 +151,8 @@ class ExceptionHandlingIntegrationTest {
                 .andExpect(jsonPath("$.traceId", not(blankOrNullString())))
                 .andExpect(jsonPath("$.timestamp", not(blankOrNullString())));
 
-        assertThat(output).contains("Infrastructure failure [traceId=");
+        assertThat(output).contains("traceId=");
+        assertThat(output).contains("Infrastructure failure [");
         assertThat(output).contains(InfrastructureErrorCode.VAULT_TRANSIT_FAILED.code());
         assertThat(output).contains("GET /test-support/infrastructure");
     }

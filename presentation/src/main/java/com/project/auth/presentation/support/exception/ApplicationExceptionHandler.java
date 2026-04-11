@@ -7,7 +7,6 @@ import com.project.auth.presentation.support.response.ApiResult;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +24,6 @@ import java.security.Principal;
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class ApplicationExceptionHandler {
 
-    private static final String TRACE_ID_KEY = "traceId";
     private static final String ANONYMOUS_PRINCIPAL = "anonymous";
 
     private static final Logger log = LoggerFactory.getLogger(ApplicationExceptionHandler.class);
@@ -36,8 +34,7 @@ public class ApplicationExceptionHandler {
             HttpServletRequest request
     ) {
         log.warn(
-                "Access denied [traceId={}] [principal={}] for {} {}: {}",
-                MDC.get(TRACE_ID_KEY),
+                "Access denied [principal={}] for {} {}: {}",
                 resolvePrincipal(request),
                 request.getMethod(),
                 request.getRequestURI(),
@@ -52,8 +49,17 @@ public class ApplicationExceptionHandler {
     }
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResult<Void>> handleBusinessException(BusinessException exception) {
-        log.warn("Business exception [{}]: {}", exception.getErrorCode().code(), exception.getMessage());
+    public ResponseEntity<ApiResult<Void>> handleBusinessException(
+            BusinessException exception,
+            HttpServletRequest request
+    ) {
+        log.warn(
+                "Business exception [{}] on {} {}: {}",
+                exception.getErrorCode().code(),
+                request.getMethod(),
+                request.getRequestURI(),
+                exception.getMessage()
+        );
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(exception.getErrorCode()))
                 .body(ApiResult.failure(exception.getErrorCode().code(), exception.getMessage()));
@@ -61,9 +67,16 @@ public class ApplicationExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotWritableException.class)
     public ResponseEntity<ApiResult<Void>> handleMessageNotWritableException(
-            HttpMessageNotWritableException exception
+            HttpMessageNotWritableException exception,
+            HttpServletRequest request
     ) {
-        log.error("Response body not writable: {}", exception.getMessage(), exception);
+        log.error(
+                "Response body not writable on {} {}: {}",
+                request.getMethod(),
+                request.getRequestURI(),
+                exception.getMessage(),
+                exception
+        );
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.MESSAGE_NOT_WRITABLE))
                 .body(ApiResult.failure(
@@ -73,8 +86,11 @@ public class ApplicationExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResult<Void>> handleUnexpectedException(Exception exception) {
-        log.error("Unhandled exception", exception);
+    public ResponseEntity<ApiResult<Void>> handleUnexpectedException(
+            Exception exception,
+            HttpServletRequest request
+    ) {
+        log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), exception);
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INTERNAL_SERVER_ERROR))
                 .body(ApiResult.failure(

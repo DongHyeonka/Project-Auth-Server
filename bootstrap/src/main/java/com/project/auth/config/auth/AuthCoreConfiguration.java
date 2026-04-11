@@ -10,6 +10,7 @@ import com.project.auth.application.auth.oauth.login.port.in.OAuthLoginUseCase;
 import com.project.auth.application.auth.oauth.login.port.out.IssueOAuthLoginTokenPort;
 import com.project.auth.application.auth.oauth.login.port.out.LoadOAuthUserPort;
 import com.project.auth.application.auth.oauth.login.port.out.RegisterOAuthUserPort;
+import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import com.project.auth.application.user.signup.SignUpService;
 import com.project.auth.application.user.signup.port.in.SignUpUseCase;
 import com.project.auth.application.user.signup.port.out.PasswordHasherPort;
@@ -49,9 +50,10 @@ public class AuthCoreConfiguration {
     public SignUpUseCase signUpUseCase(
             RegisterUserPort registerUserPort,
             PasswordHasherPort passwordHasherPort,
-            Clock systemClock
+            Clock systemClock,
+            AuthAuditEventPublisher authAuditEventPublisher
     ) {
-        return new SignUpService(registerUserPort, passwordHasherPort, systemClock);
+        return new SignUpService(registerUserPort, passwordHasherPort, systemClock, authAuditEventPublisher);
     }
 
     @Bean
@@ -79,9 +81,15 @@ public class AuthCoreConfiguration {
     public LoginUseCase loginUseCase(
             LoadLoginUserPort loadLoginUserPort,
             PasswordVerifierPort passwordVerifierPort,
-            IssueLoginTokenPort issueLoginTokenPort
+            IssueLoginTokenPort issueLoginTokenPort,
+            AuthAuditEventPublisher authAuditEventPublisher
     ) {
-        return new LoginService(loadLoginUserPort, passwordVerifierPort, issueLoginTokenPort);
+        return new LoginService(
+                loadLoginUserPort,
+                passwordVerifierPort,
+                issueLoginTokenPort,
+                authAuditEventPublisher
+        );
     }
 
     @Bean
@@ -89,13 +97,15 @@ public class AuthCoreConfiguration {
             LoadOAuthUserPort loadOAuthUserPort,
             RegisterOAuthUserPort registerOAuthUserPort,
             IssueOAuthLoginTokenPort issueOAuthLoginTokenPort,
-            Clock systemClock
+            Clock systemClock,
+            AuthAuditEventPublisher authAuditEventPublisher
     ) {
         return new OAuthLoginService(
                 loadOAuthUserPort,
                 registerOAuthUserPort,
                 issueOAuthLoginTokenPort,
-                systemClock
+                systemClock,
+                authAuditEventPublisher
         );
     }
 }

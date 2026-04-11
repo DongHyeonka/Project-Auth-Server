@@ -6,7 +6,6 @@ import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
 import com.project.auth.presentation.support.response.ApiResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -25,7 +24,6 @@ import java.security.Principal;
 
 public class SecurityExceptionHandler implements AuthenticationEntryPoint, AccessDeniedHandler {
 
-    private static final String TRACE_ID_KEY = "traceId";
     private static final String ANONYMOUS_PRINCIPAL = "anonymous";
 
     private static final Logger log = LoggerFactory.getLogger(SecurityExceptionHandler.class);
@@ -43,14 +41,16 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
             HttpServletResponse response,
             AuthenticationException authException
     ) throws IOException {
+        String principal = resolvePrincipal(request);
         log.warn(
-                "Authentication required [traceId={}] [principal={}] for {} {}: {}",
-                currentTraceId(),
-                resolvePrincipal(request),
+                "Authentication required [principal={}] for {} {}: {}",
+                principal,
                 request.getMethod(),
                 request.getRequestURI(),
                 authException.getMessage()
         );
+        audit.warn("AUTHENTICATION_REQUIRED principal={} method={} uri={}",
+                principal, request.getMethod(), request.getRequestURI());
 
         HttpStatus status = ApiErrorHttpStatusMapper.map(AuthErrorCode.AUTHENTICATION_REQUIRED);
         writeErrorResponse(response, status, AuthErrorCode.AUTHENTICATION_REQUIRED);
@@ -64,8 +64,7 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
     ) throws IOException {
         String principal = resolvePrincipal(request);
         log.warn(
-                "Access denied [traceId={}] [principal={}] for {} {}: {}",
-                currentTraceId(),
+                "Access denied [principal={}] for {} {}: {}",
                 principal,
                 request.getMethod(),
                 request.getRequestURI(),
@@ -90,10 +89,6 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
                 response.getWriter(),
                 ApiResult.failure(errorCode.code(), errorCode.message())
         );
-    }
-
-    private String currentTraceId() {
-        return MDC.get(TRACE_ID_KEY);
     }
 
     private String resolvePrincipal(HttpServletRequest request) {

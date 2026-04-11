@@ -33,7 +33,8 @@ public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
             AuthenticationException exception
     ) throws IOException {
         log.warn("OAuth2 login failed for {} {}: {}",
-                request.getMethod(), request.getRequestURI(), exception.getMessage(), exception);
+                request.getMethod(), request.getRequestURI(), exception.getMessage());
+        log.debug("OAuth2 login failure stacktrace", exception);
         audit.warn("OAUTH_AUTHENTICATION_FAILURE method={} uri={} reason={}",
                 request.getMethod(), request.getRequestURI(), exception.getMessage());
 
