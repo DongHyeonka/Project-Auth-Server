@@ -5,12 +5,11 @@ import com.project.auth.application.support.audit.AuthAuditEvent;
 import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.spi.LoggingEventBuilder;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
-
-import java.util.stream.Collectors;
 
 @Configuration
 public class AuthAuditLoggingConfiguration {
@@ -31,24 +30,10 @@ public class AuthAuditLoggingConfiguration {
 
         @EventListener
         public void onAuthAuditEvent(AuthAuditEvent event) {
-            String message = format(event);
-            if (event.level() == AuditLevel.WARN) {
-                audit.warn(message);
-                return;
-            }
-            audit.info(message);
+            LoggingEventBuilder builder = event.level() == AuditLevel.WARN ? audit.atWarn() : audit.atInfo();
+            builder.addKeyValue("eventType", event.eventType());
+            event.fields().forEach((key, value) -> builder.addKeyValue(key, LogSanitizer.normalize(value)));
+            builder.log(event.eventType());
         }
-    }
-
-    private static String format(AuthAuditEvent event) {
-        if (event.fields().isEmpty()) {
-            return event.eventType();
-        }
-
-        String fieldExpression = event.fields().entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .collect(Collectors.joining(" "));
-
-        return event.eventType() + " " + fieldExpression;
     }
 }

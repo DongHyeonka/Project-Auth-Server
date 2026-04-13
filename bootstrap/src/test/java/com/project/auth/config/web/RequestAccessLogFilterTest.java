@@ -17,7 +17,10 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,12 +58,25 @@ class RequestAccessLogFilterTest {
             assertThat(appender.list).hasSize(1);
             ILoggingEvent event = appender.list.getFirst();
             String message = event.getFormattedMessage();
+            Map<String, Object> keyValues = keyValues(event);
             assertThat(event.getMDCPropertyMap()).containsEntry("traceId", "trace-1234");
-            assertThat(message).contains("remoteIp=10.0.0.7");
-            assertThat(message).doesNotContain("203.0.113.10");
-            assertThat(message).contains("principal=alice@example.com");
-            assertThat(message).contains("status=204");
-            assertThat(message).doesNotContain("traceId=");
+            assertThat(message).isEqualTo("ACCESS");
+            assertThat(message)
+                    .doesNotContain("remoteIp=")
+                    .doesNotContain("actorId=")
+                    .doesNotContain("status=")
+                    .doesNotContain("traceId=");
+            assertThat(keyValues)
+                    .containsEntry("eventType", "HTTP_ACCESS")
+                    .containsEntry("method", "GET")
+                    .containsEntry("requestPath", "/api/v1/auth/me")
+                    .containsEntry("status", HttpServletResponse.SC_NO_CONTENT)
+                    .containsEntry("remoteIp", "10.0.0.0")
+                    .containsEntry("actorId", "al***@example.com")
+                    .containsEntry("result", "success");
+            assertThat(keyValues.get("durationMs")).isInstanceOf(Long.class);
+            assertThat((Long) keyValues.get("durationMs")).isGreaterThanOrEqualTo(0L);
+            assertThat(keyValues).doesNotContainEntry("remoteIp", "203.0.113.10");
         } finally {
             logger.detachAppender(appender);
         }
@@ -88,6 +104,19 @@ class RequestAccessLogFilterTest {
         } finally {
             logger.detachAppender(appender);
         }
+    }
+
+    private static Map<String, Object> keyValues(ILoggingEvent event) {
+        if (event.getKeyValuePairs() == null) {
+            return Map.of();
+        }
+        return event.getKeyValuePairs().stream()
+                .collect(Collectors.toMap(
+                        keyValuePair -> keyValuePair.key,
+                        keyValuePair -> keyValuePair.value,
+                        (left, ignored) -> left,
+                        LinkedHashMap::new
+                ));
     }
 
     private static final class StatusServlet extends HttpServlet {

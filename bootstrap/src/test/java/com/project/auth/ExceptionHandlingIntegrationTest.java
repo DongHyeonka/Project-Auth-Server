@@ -68,7 +68,7 @@ class ExceptionHandlingIntegrationTest {
     }
 
     @Test
-    void authenticated_user_without_required_role_returns_403_json_and_logs_principal(
+    void authenticated_user_without_required_role_returns_403_json_and_logs_masked_actor(
             CapturedOutput output
     ) throws Exception {
         mockMvc.perform(get("/test-support/admin").with(user("alice@example.com").roles("USER")))
@@ -82,9 +82,8 @@ class ExceptionHandlingIntegrationTest {
                 .andExpect(jsonPath("$.timestamp", not(blankOrNullString())));
 
         assertThat(output).contains("traceId=");
-        assertThat(output).contains("Access denied [principal=alice@example.com]");
-        assertThat(output).contains("principal=alice@example.com");
-        assertThat(output).contains("GET /test-support/admin");
+        assertThat(output).contains("Access denied. actorId=al***@example.com method=GET requestPath=/test-support/admin");
+        assertThat(output).doesNotContain("principal=alice@example.com");
     }
 
     @Test
@@ -152,9 +151,9 @@ class ExceptionHandlingIntegrationTest {
                 .andExpect(jsonPath("$.timestamp", not(blankOrNullString())));
 
         assertThat(output).contains("traceId=");
-        assertThat(output).contains("Infrastructure failure [");
+        assertThat(output).contains("Infrastructure failure. errorCode=");
         assertThat(output).contains(InfrastructureErrorCode.VAULT_TRANSIT_FAILED.code());
-        assertThat(output).contains("GET /test-support/infrastructure");
+        assertThat(output).contains("method=GET requestPath=/test-support/infrastructure");
     }
 
     @Test

@@ -69,7 +69,10 @@ class LoginServiceTest {
                 .singleElement()
                 .satisfies(event -> {
                     assertThat(event.eventType()).isEqualTo("LOGIN_SUCCESS");
-                    assertThat(event.fields()).containsEntry("email", "tester@example.com");
+                    assertThat(event.fields())
+                            .containsEntry("emailMasked", "te***@example.com")
+                            .containsKey("userIdHash")
+                            .doesNotContainEntry("email", "tester@example.com");
                 });
     }
 

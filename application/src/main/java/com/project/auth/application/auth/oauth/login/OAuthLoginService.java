@@ -7,6 +7,7 @@ import com.project.auth.application.auth.oauth.login.port.out.IssueOAuthLoginTok
 import com.project.auth.application.auth.oauth.login.port.out.LoadOAuthUserPort;
 import com.project.auth.application.auth.oauth.login.port.out.RegisterOAuthUserPort;
 import com.project.auth.application.support.audit.AuthAuditEvent;
+import com.project.auth.application.support.audit.AuthAuditFields;
 import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import com.project.auth.application.user.exception.DuplicateUserEmailException;
 import com.project.auth.domain.user.model.User;
@@ -59,8 +60,8 @@ public class OAuthLoginService implements OAuthLoginUseCase {
         LoginResult result = LoginResult.from(user, issueOAuthLoginTokenPort.issue(user));
         authAuditEventPublisher.publish(AuthAuditEvent.info(
                 "OAUTH_LOGIN_SUCCESS",
-                "userId", user.getId(),
-                "email", user.getEmail(),
+                "userIdHash", AuthAuditFields.userIdHash(user.getId()),
+                "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
                 "provider", user.getProvider()
         ));
         return result;
@@ -70,7 +71,7 @@ public class OAuthLoginService implements OAuthLoginUseCase {
         if (loadOAuthUserPort.existsByEmail(validatedCommand.email())) {
             authAuditEventPublisher.publish(AuthAuditEvent.warn(
                     "OAUTH_LOGIN_FAILURE",
-                    "email", validatedCommand.email(),
+                    "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
                     "provider", validatedCommand.provider(),
                     "reason", "email_conflict"
             ));
@@ -91,7 +92,7 @@ public class OAuthLoginService implements OAuthLoginUseCase {
         } catch (DuplicateUserEmailException exception) {
             authAuditEventPublisher.publish(AuthAuditEvent.warn(
                     "OAUTH_LOGIN_FAILURE",
-                    "email", validatedCommand.email(),
+                    "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
                     "provider", validatedCommand.provider(),
                     "reason", "duplicate_email_race_condition"
             ));

@@ -71,7 +71,10 @@ class OAuthLoginServiceTest {
                 .singleElement()
                 .satisfies(event -> {
                     assertThat(event.eventType()).isEqualTo("OAUTH_LOGIN_SUCCESS");
-                    assertThat(event.fields()).containsEntry("email", "google-user@example.com");
+                    assertThat(event.fields())
+                            .containsEntry("emailMasked", "go***@example.com")
+                            .containsKey("userIdHash")
+                            .doesNotContainEntry("email", "google-user@example.com");
                 });
     }
 

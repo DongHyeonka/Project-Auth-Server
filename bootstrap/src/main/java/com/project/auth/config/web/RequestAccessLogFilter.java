@@ -1,5 +1,6 @@
 package com.project.auth.config.web;
 
+import com.project.auth.config.logging.LogSanitizer;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +17,7 @@ import java.util.List;
 public class RequestAccessLogFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger("http.access");
+    private static final String ACCESS_EVENT_TYPE = "HTTP_ACCESS";
 
     private final List<String> excludedPathPrefixes;
 
@@ -45,8 +47,7 @@ public class RequestAccessLogFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+            FilterChain filterChain) throws ServletException, IOException {
         long startTime = System.nanoTime();
 
         try {
@@ -59,22 +60,30 @@ public class RequestAccessLogFilter extends OncePerRequestFilter {
 
     private void logRequestSummary(HttpServletRequest request, HttpServletResponse response, long durationMs) {
         String method = request.getMethod();
-        String path = request.getRequestURI();
+        String path = LogSanitizer.requestPath(request.getRequestURI());
         int status = response.getStatus();
-        String remoteIp = request.getRemoteAddr();
-        String principal = resolvePrincipal();
+        String remoteIp = LogSanitizer.clientIp(request.getRemoteAddr());
+        String actorId = resolveActorId();
         String result = status < 400 ? "success" : "failure";
 
-        log.info("ACCESS {} {} status={} durationMs={} remoteIp={} principal={} result={}",
-                method, path, status, durationMs, remoteIp, principal, result);
+        log.atInfo()
+                .addKeyValue("eventType", ACCESS_EVENT_TYPE)
+                .addKeyValue("method", method)
+                .addKeyValue("requestPath", path)
+                .addKeyValue("status", status)
+                .addKeyValue("durationMs", durationMs)
+                .addKeyValue("remoteIp", remoteIp)
+                .addKeyValue("actorId", actorId)
+                .addKeyValue("result", result)
+                .log("ACCESS");
     }
 
-    private String resolvePrincipal() {
+    private String resolveActorId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()
                 && !"anonymousUser".equals(authentication.getPrincipal())) {
-            return authentication.getName();
+            return LogSanitizer.actorId(authentication.getName());
         }
-        return "anonymous";
+        return LogSanitizer.actorId("anonymous");
     }
 }

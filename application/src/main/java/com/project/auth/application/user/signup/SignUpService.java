@@ -1,6 +1,7 @@
 package com.project.auth.application.user.signup;
 
 import com.project.auth.application.support.audit.AuthAuditEvent;
+import com.project.auth.application.support.audit.AuthAuditFields;
 import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import com.project.auth.application.user.exception.DuplicateUserEmailException;
 import com.project.auth.application.user.signup.port.in.SignUpUseCase;
@@ -42,7 +43,7 @@ public class SignUpService implements SignUpUseCase {
         if (registerUserPort.existsByEmail(validatedCommand.email())) {
             authAuditEventPublisher.publish(AuthAuditEvent.warn(
                     "SIGNUP_FAILURE",
-                    "email", validatedCommand.email(),
+                    "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
                     "reason", "duplicate_email"
             ));
             throw new DuplicateUserEmailException();
@@ -59,8 +60,8 @@ public class SignUpService implements SignUpUseCase {
         User savedUser = registerUserPort.save(user);
         authAuditEventPublisher.publish(AuthAuditEvent.info(
                 "SIGNUP_SUCCESS",
-                "userId", savedUser.getId(),
-                "email", savedUser.getEmail()
+                "userIdHash", AuthAuditFields.userIdHash(savedUser.getId()),
+                "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email())
         ));
         return SignUpResult.from(savedUser);
     }

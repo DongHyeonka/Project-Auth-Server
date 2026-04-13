@@ -51,7 +51,10 @@ class SignUpServiceTest {
                 .singleElement()
                 .satisfies(event -> {
                     assertThat(event.eventType()).isEqualTo("SIGNUP_SUCCESS");
-                    assertThat(event.fields()).containsEntry("email", "tester@example.com");
+                    assertThat(event.fields())
+                            .containsEntry("emailMasked", "te***@example.com")
+                            .containsKey("userIdHash")
+                            .doesNotContainEntry("email", "tester@example.com");
                 });
     }
 

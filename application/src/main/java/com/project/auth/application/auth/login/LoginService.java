@@ -6,6 +6,7 @@ import com.project.auth.application.auth.login.port.out.IssueLoginTokenPort;
 import com.project.auth.application.auth.login.port.out.LoadLoginUserPort;
 import com.project.auth.application.auth.login.port.out.PasswordVerifierPort;
 import com.project.auth.application.support.audit.AuthAuditEvent;
+import com.project.auth.application.support.audit.AuthAuditFields;
 import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import com.project.auth.domain.user.model.AuthProvider;
 import com.project.auth.domain.user.model.User;
@@ -48,7 +49,7 @@ public class LoginService implements LoginUseCase {
                 .orElseThrow(() -> {
                     authAuditEventPublisher.publish(AuthAuditEvent.warn(
                             "LOGIN_FAILURE",
-                            "email", validatedCommand.email(),
+                            "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
                             "reason", "user_not_found"
                     ));
                     return new InvalidUserCredentialsException();
@@ -57,7 +58,7 @@ public class LoginService implements LoginUseCase {
         if (user.getProvider() != AuthProvider.LOCAL) {
             authAuditEventPublisher.publish(AuthAuditEvent.warn(
                     "LOGIN_FAILURE",
-                    "email", validatedCommand.email(),
+                    "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
                     "reason", "non_local_provider",
                     "provider", user.getProvider()
             ));
@@ -67,7 +68,7 @@ public class LoginService implements LoginUseCase {
         if (!passwordVerifierPort.matches(validatedCommand.password(), user.getEncodedPassword())) {
             authAuditEventPublisher.publish(AuthAuditEvent.warn(
                     "LOGIN_FAILURE",
-                    "email", validatedCommand.email(),
+                    "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
                     "reason", "invalid_password"
             ));
             throw new InvalidUserCredentialsException();
@@ -76,8 +77,8 @@ public class LoginService implements LoginUseCase {
         LoginResult result = LoginResult.from(user, issueLoginTokenPort.issue(user));
         authAuditEventPublisher.publish(AuthAuditEvent.info(
                 "LOGIN_SUCCESS",
-                "userId", user.getId(),
-                "email", user.getEmail()
+                "userIdHash", AuthAuditFields.userIdHash(user.getId()),
+                "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email())
         ));
         return result;
     }

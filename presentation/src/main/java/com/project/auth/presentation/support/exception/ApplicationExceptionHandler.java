@@ -18,13 +18,21 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 
 @RestControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class ApplicationExceptionHandler {
 
     private static final String ANONYMOUS_PRINCIPAL = "anonymous";
+    private static final String HASH_PREFIX = "sha256:";
+    private static final int HASH_HEX_LENGTH = 16;
+    private static final int MAX_LOG_VALUE_LENGTH = 200;
+    private static final HexFormat HEX_FORMAT = HexFormat.of();
 
     private static final Logger log = LoggerFactory.getLogger(ApplicationExceptionHandler.class);
 
@@ -34,11 +42,10 @@ public class ApplicationExceptionHandler {
             HttpServletRequest request
     ) {
         log.warn(
-                "Access denied [principal={}] for {} {}: {}",
-                resolvePrincipal(request),
+                "Access denied. actorId={} method={} requestPath={}",
+                resolveActorId(request),
                 request.getMethod(),
-                request.getRequestURI(),
-                exception.getMessage()
+                normalizeLogValue(request.getRequestURI())
         );
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(AuthErrorCode.ACCESS_DENIED))
@@ -54,11 +61,10 @@ public class ApplicationExceptionHandler {
             HttpServletRequest request
     ) {
         log.warn(
-                "Business exception [{}] on {} {}: {}",
+                "Business exception. errorCode={} method={} requestPath={}",
                 exception.getErrorCode().code(),
                 request.getMethod(),
-                request.getRequestURI(),
-                exception.getMessage()
+                normalizeLogValue(request.getRequestURI())
         );
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(exception.getErrorCode()))
@@ -71,10 +77,9 @@ public class ApplicationExceptionHandler {
             HttpServletRequest request
     ) {
         log.error(
-                "Response body not writable on {} {}: {}",
+                "Response body not writable. method={} requestPath={}",
                 request.getMethod(),
-                request.getRequestURI(),
-                exception.getMessage(),
+                normalizeLogValue(request.getRequestURI()),
                 exception
         );
 
@@ -90,7 +95,12 @@ public class ApplicationExceptionHandler {
             Exception exception,
             HttpServletRequest request
     ) {
-        log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), exception);
+        log.error(
+                "Unhandled exception. method={} requestPath={}",
+                request.getMethod(),
+                normalizeLogValue(request.getRequestURI()),
+                exception
+        );
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INTERNAL_SERVER_ERROR))
                 .body(ApiResult.failure(
@@ -99,19 +109,72 @@ public class ApplicationExceptionHandler {
                 ));
     }
 
-    private String resolvePrincipal(HttpServletRequest request) {
+    private String resolveActorId(HttpServletRequest request) {
         Principal principal = request.getUserPrincipal();
         if (principal != null) {
-            return principal.getName();
+            return actorId(principal.getName());
         }
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken)) {
-            return authentication.getName();
+            return actorId(authentication.getName());
         }
 
         return ANONYMOUS_PRINCIPAL;
+    }
+
+    private static String actorId(String value) {
+        if (value == null || value.isBlank() || ANONYMOUS_PRINCIPAL.equals(value)) {
+            return ANONYMOUS_PRINCIPAL;
+        }
+        String normalized = normalizeLogValue(value);
+        if (normalized.contains("@")) {
+            return maskEmail(normalized);
+        }
+        return HASH_PREFIX + sha256Hex(normalized).substring(0, HASH_HEX_LENGTH);
+    }
+
+    private static String normalizeLogValue(String value) {
+        if (value == null || value.isBlank()) {
+            return "-";
+        }
+
+        StringBuilder builder = new StringBuilder(Math.min(value.length(), MAX_LOG_VALUE_LENGTH));
+        for (int index = 0; index < value.length() && builder.length() < MAX_LOG_VALUE_LENGTH; index++) {
+            char character = value.charAt(index);
+            if (Character.isISOControl(character) || Character.isWhitespace(character) || character == '='
+                    || character == '|') {
+                builder.append('_');
+            } else {
+                builder.append(character);
+            }
+        }
+        if (value.length() > MAX_LOG_VALUE_LENGTH) {
+            builder.append("...");
+        }
+        return builder.toString();
+    }
+
+    private static String maskEmail(String email) {
+        int atIndex = email.indexOf('@');
+        if (atIndex <= 0 || atIndex == email.length() - 1) {
+            return "***";
+        }
+
+        String localPart = email.substring(0, atIndex);
+        String domain = email.substring(atIndex + 1);
+        String prefix = localPart.length() == 1 ? localPart : localPart.substring(0, Math.min(localPart.length(), 2));
+        return prefix + "***@" + domain;
+    }
+
+    private static String sha256Hex(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HEX_FORMAT.formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 digest is not available.", exception);
+        }
     }
 }

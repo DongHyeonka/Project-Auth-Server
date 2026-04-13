@@ -2,6 +2,7 @@ package com.project.auth.config.auth.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.auth.application.auth.exception.AuthErrorCode;
+import com.project.auth.config.logging.LogSanitizer;
 import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
 import com.project.auth.presentation.support.response.ApiResult;
 import org.slf4j.Logger;
@@ -41,16 +42,20 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
             HttpServletResponse response,
             AuthenticationException authException
     ) throws IOException {
-        String principal = resolvePrincipal(request);
+        String actorId = resolveActorId(request);
+        String requestPath = LogSanitizer.requestPath(request.getRequestURI());
         log.warn(
-                "Authentication required [principal={}] for {} {}: {}",
-                principal,
+                "Authentication required. actorId={} method={} requestPath={}",
+                actorId,
                 request.getMethod(),
-                request.getRequestURI(),
-                authException.getMessage()
+                requestPath
         );
-        audit.warn("AUTHENTICATION_REQUIRED principal={} method={} uri={}",
-                principal, request.getMethod(), request.getRequestURI());
+        audit.atWarn()
+                .addKeyValue("eventType", "AUTHENTICATION_REQUIRED")
+                .addKeyValue("actorId", actorId)
+                .addKeyValue("method", request.getMethod())
+                .addKeyValue("requestPath", requestPath)
+                .log("AUTHENTICATION_REQUIRED");
 
         HttpStatus status = ApiErrorHttpStatusMapper.map(AuthErrorCode.AUTHENTICATION_REQUIRED);
         writeErrorResponse(response, status, AuthErrorCode.AUTHENTICATION_REQUIRED);
@@ -62,16 +67,20 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
             HttpServletResponse response,
             AccessDeniedException accessDeniedException
     ) throws IOException {
-        String principal = resolvePrincipal(request);
+        String actorId = resolveActorId(request);
+        String requestPath = LogSanitizer.requestPath(request.getRequestURI());
         log.warn(
-                "Access denied [principal={}] for {} {}: {}",
-                principal,
+                "Access denied. actorId={} method={} requestPath={}",
+                actorId,
                 request.getMethod(),
-                request.getRequestURI(),
-                accessDeniedException.getMessage()
+                requestPath
         );
-        audit.warn("ACCESS_DENIED principal={} method={} uri={}",
-                principal, request.getMethod(), request.getRequestURI());
+        audit.atWarn()
+                .addKeyValue("eventType", "ACCESS_DENIED")
+                .addKeyValue("actorId", actorId)
+                .addKeyValue("method", request.getMethod())
+                .addKeyValue("requestPath", requestPath)
+                .log("ACCESS_DENIED");
 
         HttpStatus status = ApiErrorHttpStatusMapper.map(AuthErrorCode.ACCESS_DENIED);
         writeErrorResponse(response, status, AuthErrorCode.ACCESS_DENIED);
@@ -91,19 +100,19 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
         );
     }
 
-    private String resolvePrincipal(HttpServletRequest request) {
+    private String resolveActorId(HttpServletRequest request) {
         Principal principal = request.getUserPrincipal();
         if (principal != null) {
-            return principal.getName();
+            return LogSanitizer.actorId(principal.getName());
         }
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken)) {
-            return authentication.getName();
+            return LogSanitizer.actorId(authentication.getName());
         }
 
-        return ANONYMOUS_PRINCIPAL;
+        return LogSanitizer.actorId(ANONYMOUS_PRINCIPAL);
     }
 }

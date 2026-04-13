@@ -1,5 +1,6 @@
 package com.project.auth.config.web;
 
+import com.project.auth.config.logging.LogSanitizer;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,37 +20,35 @@ public class TraceIdFilter extends OncePerRequestFilter {
     private static final String USER_AGENT_KEY = "userAgent";
     private static final String TRACE_ID_HEADER = "X-Trace-Id";
     private static final String USER_AGENT_HEADER = "User-Agent";
-    private static final String UNAVAILABLE_VALUE = "-";
     private static final HexFormat HEX_FORMAT = HexFormat.of();
 
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+            FilterChain filterChain) throws ServletException, IOException {
         String traceId = nextTraceId();
-        String clientIp = normalize(request.getRemoteAddr());
-        String userAgent = normalize(request.getHeader(USER_AGENT_HEADER));
+        String clientIp = LogSanitizer.clientIp(request.getRemoteAddr());
+        String userAgent = LogSanitizer.userAgent(request.getHeader(USER_AGENT_HEADER));
         response.setHeader(TRACE_ID_HEADER, traceId);
 
         try (
                 MDCCloseable ignoredTraceId = MDC.putCloseable(TRACE_ID_KEY, traceId);
                 MDCCloseable ignoredClientIp = MDC.putCloseable(CLIENT_IP_KEY, clientIp);
-                MDCCloseable ignoredUserAgent = MDC.putCloseable(USER_AGENT_KEY, userAgent)
-        ) {
+                MDCCloseable ignoredUserAgent = MDC.putCloseable(USER_AGENT_KEY, userAgent)) {
             filterChain.doFilter(request, response);
         }
     }
 
     private String nextTraceId() {
-        return HEX_FORMAT.toHexDigits(ThreadLocalRandom.current().nextLong());
+        long highBits;
+        long lowBits;
+        do {
+            highBits = ThreadLocalRandom.current().nextLong();
+            lowBits = ThreadLocalRandom.current().nextLong();
+        } while (highBits == 0L && lowBits == 0L);
+
+        return HEX_FORMAT.toHexDigits(highBits) + HEX_FORMAT.toHexDigits(lowBits);
     }
 
-    private String normalize(String value) {
-        if (value == null || value.isBlank()) {
-            return UNAVAILABLE_VALUE;
-        }
-        return value;
-    }
 }

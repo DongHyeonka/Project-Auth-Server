@@ -14,6 +14,10 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class OAuth2LoginFailureHandlerTest {
@@ -39,7 +43,7 @@ class OAuth2LoginFailureHandlerTest {
             MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login/oauth2/code/keycloak-google");
             MockHttpServletResponse response = new MockHttpServletResponse();
             MDC.put("traceId", "trace-oauth-1");
-            MDC.put("clientIp", "10.0.0.7");
+            MDC.put("clientIp", "10.0.0.0");
             MDC.put("userAgent", "JUnit/5");
 
             handler.onAuthenticationFailure(
@@ -52,20 +56,42 @@ class OAuth2LoginFailureHandlerTest {
             ILoggingEvent warnEvent = classAppender.list.getFirst();
             assertThat(warnEvent.getLevel()).isEqualTo(Level.WARN);
             assertThat(warnEvent.getThrowableProxy()).isNull();
-            assertThat(warnEvent.getFormattedMessage()).contains("provider rejected authentication");
+            assertThat(warnEvent.getFormattedMessage())
+                    .contains("reason=access_denied")
+                    .doesNotContain("provider rejected authentication");
 
             assertThat(auditAppender.list).hasSize(1);
             ILoggingEvent auditEvent = auditAppender.list.getFirst();
             assertThat(auditEvent.getFormattedMessage())
                     .contains("OAUTH_AUTHENTICATION_FAILURE")
+                    .doesNotContain("reason=")
+                    .doesNotContain("method=")
                     .doesNotContain("traceId=");
+            assertThat(keyValues(auditEvent))
+                    .containsEntry("eventType", "OAUTH_AUTHENTICATION_FAILURE")
+                    .containsEntry("method", "GET")
+                    .containsEntry("requestPath", "/login/oauth2/code/keycloak-google")
+                    .containsEntry("reason", "access_denied");
             assertThat(auditEvent.getMDCPropertyMap())
                     .containsEntry("traceId", "trace-oauth-1")
-                    .containsEntry("clientIp", "10.0.0.7")
+                    .containsEntry("clientIp", "10.0.0.0")
                     .containsEntry("userAgent", "JUnit/5");
         } finally {
             classLogger.detachAppender(classAppender);
             auditLogger.detachAppender(auditAppender);
         }
+    }
+
+    private static Map<String, Object> keyValues(ILoggingEvent event) {
+        if (event.getKeyValuePairs() == null) {
+            return Map.of();
+        }
+        return event.getKeyValuePairs().stream()
+                .collect(Collectors.toMap(
+                        keyValuePair -> keyValuePair.key,
+                        keyValuePair -> keyValuePair.value,
+                        (left, ignored) -> left,
+                        LinkedHashMap::new
+                ));
     }
 }
