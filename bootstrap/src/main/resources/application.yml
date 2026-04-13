@@ -12,6 +12,9 @@ spring:
           time_zone: UTC
 server:
   forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      internal-proxies: '${SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES:10\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[0-1])\.[0-9]+\.[0-9]+|127\.[0-9]+\.[0-9]+\.[0-9]+}'
 
 logging:
 app:

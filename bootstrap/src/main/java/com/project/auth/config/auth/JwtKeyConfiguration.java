@@ -26,8 +26,11 @@ public class JwtKeyConfiguration {
     public JwtSigningKeyMaterial jwtSigningKeyMaterial(JwtSigningKeySource jwtSigningKeySource) {
         log.info("JWT key source selected: {}", jwtSigningKeySource.getClass().getSimpleName());
         JwtSigningKeyMaterial material = jwtSigningKeySource.load();
-        audit.info("KEY_SOURCE_SELECTED source={} activeKeyId={}",
-                jwtSigningKeySource.getClass().getSimpleName(), material.activeKeyId());
+        audit.atInfo()
+                .addKeyValue("eventType", "KEY_SOURCE_SELECTED")
+                .addKeyValue("source", jwtSigningKeySource.getClass().getSimpleName())
+                .addKeyValue("activeKeyId", material.activeKeyId())
+                .log("KEY_SOURCE_SELECTED");
         return material;
     }
 

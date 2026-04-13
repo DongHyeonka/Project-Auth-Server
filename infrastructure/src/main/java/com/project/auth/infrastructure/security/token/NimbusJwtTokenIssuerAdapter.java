@@ -67,8 +67,12 @@ public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort, IssueOA
                 .build();
 
         String tokenValue = signToken(claims);
-        audit.info("TOKEN_ISSUED subject={} keyId={} expiresIn={}s",
-                user.getId(), keyId, accessTokenExpiration.getSeconds());
+        audit.atInfo()
+                .addKeyValue("eventType", "TOKEN_ISSUED")
+                .addKeyValue("subject", user.getId())
+                .addKeyValue("keyId", keyId)
+                .addKeyValue("expiresInSeconds", accessTokenExpiration.getSeconds())
+                .log("TOKEN_ISSUED");
 
         return new IssuedAccessToken(
                 issuer,
