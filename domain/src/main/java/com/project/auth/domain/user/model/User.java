@@ -1,7 +1,5 @@
 package com.project.auth.domain.user.model;
 
-import com.project.auth.domain.user.service.UserPasswordPolicy;
-
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -10,19 +8,19 @@ public final class User {
 
     private final UUID id;
     private final UserEmail email;
-    private final String encodedPassword;
+    private final EncodedPassword encodedPassword;
     private final UserName name;
     private final AuthProvider provider;
-    private final String providerSubject;
+    private final ProviderSubject providerSubject;
     private final Instant createdAt;
 
     private User(
             UUID id,
             UserEmail email,
-            String encodedPassword,
+            EncodedPassword encodedPassword,
             UserName name,
             AuthProvider provider,
-            String providerSubject,
+            ProviderSubject providerSubject,
             Instant createdAt
     ) {
         this.id = Objects.requireNonNull(id, "id must not be null");
@@ -41,9 +39,7 @@ public final class User {
             UserName name,
             Instant createdAt
     ) {
-        UserPasswordPolicy.validateEncoded(encodedPassword);
-
-        return new User(id, email, encodedPassword, name, AuthProvider.LOCAL, null, createdAt);
+        return new User(id, email, EncodedPassword.from(encodedPassword), name, AuthProvider.LOCAL, null, createdAt);
     }
 
     public static User registerSocial(
@@ -58,11 +54,7 @@ public final class User {
             throw new IllegalArgumentException("Social registration cannot use LOCAL provider.");
         }
 
-        if (providerSubject == null || providerSubject.isBlank()) {
-            throw new IllegalArgumentException("providerSubject must not be blank.");
-        }
-
-        return new User(id, email, null, name, provider, providerSubject.trim(), createdAt);
+        return new User(id, email, null, name, provider, ProviderSubject.from(providerSubject), createdAt);
     }
 
     public static User restore(
@@ -75,13 +67,10 @@ public final class User {
             Instant createdAt
     ) {
         if (provider == AuthProvider.LOCAL) {
-            UserPasswordPolicy.validateEncoded(encodedPassword);
-            providerSubject = null;
-        } else if (providerSubject == null || providerSubject.isBlank()) {
-            throw new IllegalArgumentException("providerSubject must not be blank.");
+            return new User(id, email, EncodedPassword.from(encodedPassword), name, provider, null, createdAt);
         }
 
-        return new User(id, email, encodedPassword, name, provider, providerSubject, createdAt);
+        return new User(id, email, null, name, provider, ProviderSubject.from(providerSubject), createdAt);
     }
 
     public UUID getId() {
@@ -93,7 +82,7 @@ public final class User {
     }
 
     public String getEncodedPassword() {
-        return encodedPassword;
+        return encodedPassword == null ? null : encodedPassword.value();
     }
 
     public String getName() {
@@ -105,7 +94,7 @@ public final class User {
     }
 
     public String getProviderSubject() {
-        return providerSubject;
+        return providerSubject == null ? null : providerSubject.value();
     }
 
     public Instant getCreatedAt() {

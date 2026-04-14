@@ -48,9 +48,13 @@ class LoginServiceTest {
         );
         auditEventPublisher = new RecordingAuthAuditEventPublisher();
 
-        loginService = new LoginService(
+        LoginAuthenticationService loginAuthenticationService = new LoginAuthenticationService(
                 loadLoginUserPort,
                 passwordVerifierPort,
+                auditEventPublisher
+        );
+        loginService = new LoginService(
+                loginAuthenticationService,
                 issueLoginTokenPort,
                 auditEventPublisher
         );

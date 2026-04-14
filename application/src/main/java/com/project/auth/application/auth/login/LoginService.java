@@ -1,35 +1,29 @@
 package com.project.auth.application.auth.login;
 
-import com.project.auth.application.auth.exception.InvalidUserCredentialsException;
 import com.project.auth.application.auth.login.port.in.LoginUseCase;
 import com.project.auth.application.auth.login.port.out.IssueLoginTokenPort;
-import com.project.auth.application.auth.login.port.out.LoadLoginUserPort;
-import com.project.auth.application.auth.login.port.out.PasswordVerifierPort;
 import com.project.auth.application.support.audit.AuthAuditEvent;
 import com.project.auth.application.support.audit.AuthAuditFields;
 import com.project.auth.application.support.audit.AuthAuditEventPublisher;
-import com.project.auth.domain.user.model.AuthProvider;
+import com.project.auth.application.support.audit.AuthAuditEventType;
 import com.project.auth.domain.user.model.User;
 
 import java.util.Objects;
 
 public class LoginService implements LoginUseCase {
 
-    private final LoadLoginUserPort loadLoginUserPort;
-    private final PasswordVerifierPort passwordVerifierPort;
+    private final LoginAuthenticationService loginAuthenticationService;
     private final IssueLoginTokenPort issueLoginTokenPort;
     private final AuthAuditEventPublisher authAuditEventPublisher;
 
     public LoginService(
-            LoadLoginUserPort loadLoginUserPort,
-            PasswordVerifierPort passwordVerifierPort,
+            LoginAuthenticationService loginAuthenticationService,
             IssueLoginTokenPort issueLoginTokenPort,
             AuthAuditEventPublisher authAuditEventPublisher
     ) {
-        this.loadLoginUserPort = Objects.requireNonNull(loadLoginUserPort, "loadLoginUserPort must not be null");
-        this.passwordVerifierPort = Objects.requireNonNull(
-                passwordVerifierPort,
-                "passwordVerifierPort must not be null"
+        this.loginAuthenticationService = Objects.requireNonNull(
+                loginAuthenticationService,
+                "loginAuthenticationService must not be null"
         );
         this.issueLoginTokenPort = Objects.requireNonNull(
                 issueLoginTokenPort,
@@ -44,39 +38,11 @@ public class LoginService implements LoginUseCase {
     @Override
     public LoginResult login(LoginCommand command) {
         ValidatedLoginCommand validatedCommand = LoginCommandValidator.validate(command);
-
-        User user = loadLoginUserPort.findByEmail(validatedCommand.email())
-                .orElseThrow(() -> {
-                    authAuditEventPublisher.publish(AuthAuditEvent.warn(
-                            "LOGIN_FAILURE",
-                            "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
-                            "reason", "user_not_found"
-                    ));
-                    return new InvalidUserCredentialsException();
-                });
-
-        if (user.getProvider() != AuthProvider.LOCAL) {
-            authAuditEventPublisher.publish(AuthAuditEvent.warn(
-                    "LOGIN_FAILURE",
-                    "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
-                    "reason", "non_local_provider",
-                    "provider", user.getProvider()
-            ));
-            throw new InvalidUserCredentialsException();
-        }
-
-        if (!passwordVerifierPort.matches(validatedCommand.password(), user.getEncodedPassword())) {
-            authAuditEventPublisher.publish(AuthAuditEvent.warn(
-                    "LOGIN_FAILURE",
-                    "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
-                    "reason", "invalid_password"
-            ));
-            throw new InvalidUserCredentialsException();
-        }
+        User user = loginAuthenticationService.authenticate(validatedCommand);
 
         LoginResult result = LoginResult.from(user, issueLoginTokenPort.issue(user));
         authAuditEventPublisher.publish(AuthAuditEvent.info(
-                "LOGIN_SUCCESS",
+                AuthAuditEventType.LOGIN_SUCCESS.code(),
                 "userIdHash", AuthAuditFields.userIdHash(user.getId()),
                 "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email())
         ));

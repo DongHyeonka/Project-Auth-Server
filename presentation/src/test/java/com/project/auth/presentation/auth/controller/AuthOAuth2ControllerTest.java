@@ -1,21 +1,17 @@
 package com.project.auth.presentation.auth.controller;
 
 import com.project.auth.application.auth.login.LoginResult;
+import com.project.auth.presentation.auth.current.OAuth2AuthorizationRedirects;
+import com.project.auth.presentation.auth.current.OAuth2LoginPrincipal;
 import com.project.auth.presentation.auth.mapper.AuthPresentationMapper;
 import com.project.auth.presentation.auth.mapper.OAuth2AuthenticationCommandMapper;
+import com.project.auth.presentation.support.response.FixedApiResultFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.oidc.OidcIdToken;
-import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +32,9 @@ class AuthOAuth2ControllerTest {
                     Instant.parse("2026-03-14T00:30:00Z")
             ),
             new AuthPresentationMapper(),
-            new OAuth2AuthenticationCommandMapper()
+            new OAuth2AuthenticationCommandMapper(),
+            new TestOAuth2AuthorizationRedirects(),
+            new FixedApiResultFactory()
     );
 
     @Test
@@ -59,26 +57,14 @@ class AuthOAuth2ControllerTest {
 
     @Test
     void completeOAuthLoginReturnsJwtResponse() {
-        OidcUser oidcUser = new DefaultOidcUser(
-                List.of(new SimpleGrantedAuthority("ROLE_USER")),
-                new OidcIdToken(
-                        "id-token",
-                        Instant.parse("2026-03-14T00:00:00Z"),
-                        Instant.parse("2026-03-14T00:30:00Z"),
-                        Map.of(
-                                "sub", "google-subject",
-                                "email", "tester@example.com",
-                                "name", "테스터"
-                        )
-                )
-        );
-        OAuth2AuthenticationToken authentication = new OAuth2AuthenticationToken(
-                oidcUser,
-                oidcUser.getAuthorities(),
-                "keycloak-google"
+        OAuth2LoginPrincipal currentUser = new OAuth2LoginPrincipal(
+                "GOOGLE",
+                "google-subject",
+                "tester@example.com",
+                "테스터"
         );
 
-        var response = controller.completeOAuthLogin(authentication);
+        var response = controller.completeOAuthLogin(currentUser);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
@@ -87,5 +73,18 @@ class AuthOAuth2ControllerTest {
         assertThat(response.getBody().data().user().provider()).isEqualTo("GOOGLE");
         assertThat(response.getBody().data().user().email()).isEqualTo("tester@example.com");
         assertThat(response.getBody().data().token().issuer()).isEqualTo("project-auth-server");
+    }
+
+    private static class TestOAuth2AuthorizationRedirects implements OAuth2AuthorizationRedirects {
+
+        @Override
+        public String googleAuthorizationPath() {
+            return "/oauth2/authorization/keycloak-google";
+        }
+
+        @Override
+        public String githubAuthorizationPath() {
+            return "/oauth2/authorization/keycloak-github";
+        }
     }
 }

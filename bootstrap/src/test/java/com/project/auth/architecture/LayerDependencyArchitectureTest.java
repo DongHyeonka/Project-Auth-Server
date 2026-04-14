@@ -45,6 +45,37 @@ class LayerDependencyArchitectureTest {
                     );
 
     @ArchTest
+    static final ArchRule presentation_must_not_read_security_context_directly =
+            noClasses()
+                    .that().resideInAnyPackage("com.project.auth.presentation..")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "org.springframework.security.core.context.."
+                    );
+
+    @ArchTest
+    static final ArchRule presentation_must_not_accept_raw_spring_security_authentication =
+            noClasses()
+                    .that().resideInAnyPackage("com.project.auth.presentation..")
+                    .should().dependOnClassesThat().haveFullyQualifiedName(
+                            "org.springframework.security.core.Authentication"
+                    );
+
+    @ArchTest
+    static final ArchRule api_result_must_remain_a_pure_response_envelope =
+            noClasses()
+                    .that().haveSimpleName("ApiResult")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "org.slf4j..",
+                            "java.time.."
+                    );
+
+    @ArchTest
+    static final ArchRule infrastructure_adapters_must_not_own_transaction_boundaries =
+            noClasses()
+                    .that().resideInAnyPackage("com.project.auth.infrastructure..")
+                    .should().dependOnClassesThat().resideInAnyPackage("org.springframework.transaction.annotation..");
+
+    @ArchTest
     static final ArchRule bootstrap_is_the_only_layer_that_may_depend_on_config_packages =
             noClasses()
                     .that().resideInAnyPackage(

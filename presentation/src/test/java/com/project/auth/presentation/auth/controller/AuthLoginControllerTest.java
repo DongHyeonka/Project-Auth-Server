@@ -5,6 +5,7 @@ import com.project.auth.application.auth.login.port.in.LoginUseCase;
 import com.project.auth.presentation.auth.dto.LoginRequest;
 import com.project.auth.presentation.auth.mapper.AuthPresentationMapper;
 import com.project.auth.presentation.support.response.ApiSuccessCode;
+import com.project.auth.presentation.support.response.FixedApiResultFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
@@ -30,7 +31,11 @@ class AuthLoginControllerTest {
                 Instant.parse("2026-03-14T00:30:00Z")
         );
         AuthPresentationMapper authPresentationMapper = new AuthPresentationMapper();
-        AuthLoginController controller = new AuthLoginController(loginUseCase, authPresentationMapper);
+        AuthLoginController controller = new AuthLoginController(
+                loginUseCase,
+                authPresentationMapper,
+                new FixedApiResultFactory()
+        );
 
         var response = controller.login(new LoginRequest("tester@example.com", "password123"));
 
@@ -38,6 +43,8 @@ class AuthLoginControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().success()).isTrue();
         assertThat(response.getBody().code()).isEqualTo(ApiSuccessCode.AUTH_LOGIN_SUCCEEDED.code());
+        assertThat(response.getBody().traceId()).isEqualTo("test-trace-id");
+        assertThat(response.getBody().timestamp()).isEqualTo("2026-03-14T00:00:00Z");
         assertThat(response.getBody().data()).isNotNull();
         assertThat(response.getBody().data().user().email()).isEqualTo("tester@example.com");
         assertThat(response.getBody().data().token().issuer()).isEqualTo("project-auth-server");

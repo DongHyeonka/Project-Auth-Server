@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.auth.application.auth.exception.AuthErrorCode;
 import com.project.auth.config.logging.LogSanitizer;
 import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
-import com.project.auth.presentation.support.response.ApiResult;
+import com.project.auth.presentation.support.response.ApiResultFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -31,9 +31,11 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
     private static final Logger audit = LoggerFactory.getLogger("audit.auth");
 
     private final ObjectMapper objectMapper;
+    private final ApiResultFactory apiResultFactory;
 
-    public SecurityExceptionHandler(ObjectMapper objectMapper) {
+    public SecurityExceptionHandler(ObjectMapper objectMapper, ApiResultFactory apiResultFactory) {
         this.objectMapper = objectMapper;
+        this.apiResultFactory = apiResultFactory;
     }
 
     @Override
@@ -96,7 +98,7 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         objectMapper.writeValue(
                 response.getWriter(),
-                ApiResult.failure(errorCode.code(), errorCode.message())
+                apiResultFactory.failure(errorCode.code(), errorCode.message())
         );
     }
 

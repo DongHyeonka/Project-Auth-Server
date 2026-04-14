@@ -16,6 +16,7 @@
 |------|------|
 | [01-principles.md](./01-principles.md) | 레이어 경계와 조립 원칙의 요약 |
 | [02-error-handling.md](./02-error-handling.md) | 예외 처리 구조, 계층별 책임, 로깅/추적 전략 |
+| [03-adr-boundary-refactoring.md](./03-adr-boundary-refactoring.md) | AGENTS 기준으로 응답, 인증, 트랜잭션, 인프라 경계를 재정렬한 결정 기록 |
 
 ## 관련 문서
 

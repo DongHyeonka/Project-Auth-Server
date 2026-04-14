@@ -5,15 +5,13 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.JWSSigner;
 import com.project.auth.infrastructure.security.token.vault.VaultTransitClient;
 import com.project.auth.infrastructure.security.token.vault.VaultTransitJwtSigner;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.net.http.HttpClient;
+import org.springframework.web.client.RestClient;
 
 @Configuration
 @EnableConfigurationProperties({JwtProperties.class, JwtVaultProperties.class})
@@ -46,23 +44,15 @@ public class JwtKeyConfiguration {
 
     @Bean
     @ConditionalOnProperty(prefix = "app.security.jwt.vault", name = "enabled", havingValue = "true")
-    public HttpClient vaultHttpClient() {
-        return HttpClient.newHttpClient();
-    }
-
-    @Bean
-    @ConditionalOnProperty(prefix = "app.security.jwt.vault", name = "enabled", havingValue = "true")
     public VaultTransitClient vaultTransitClient(
             JwtVaultProperties jwtVaultProperties,
-            HttpClient vaultHttpClient,
-            ObjectMapper objectMapper
+            RestClient.Builder restClientBuilder
     ) {
-        return new VaultTransitClient(
-                jwtVaultProperties.address(),
-                jwtVaultProperties.token(),
-                vaultHttpClient,
-                objectMapper
-        );
+        RestClient vaultRestClient = restClientBuilder
+                .baseUrl(jwtVaultProperties.address())
+                .defaultHeader("X-Vault-Token", jwtVaultProperties.token())
+                .build();
+        return new VaultTransitClient(vaultRestClient);
     }
 
     @Bean

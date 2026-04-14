@@ -46,11 +46,15 @@ class OAuthLoginServiceTest {
         Clock fixedClock = Clock.fixed(Instant.parse("2026-03-14T00:00:00Z"), ZoneOffset.UTC);
         auditEventPublisher = new RecordingAuthAuditEventPublisher();
 
-        oAuthLoginService = new OAuthLoginService(
+        OAuthUserRegistrationService oAuthUserRegistrationService = new OAuthUserRegistrationService(
                 fakeOAuthUserStore,
                 fakeOAuthUserStore,
-                issueOAuthLoginTokenPort,
                 fixedClock,
+                auditEventPublisher
+        );
+        oAuthLoginService = new OAuthLoginService(
+                oAuthUserRegistrationService,
+                issueOAuthLoginTokenPort,
                 auditEventPublisher
         );
     }

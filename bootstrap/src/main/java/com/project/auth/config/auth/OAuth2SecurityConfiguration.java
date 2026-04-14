@@ -5,6 +5,7 @@ import com.project.auth.config.auth.security.KeycloakIdpHintAuthorizationRequest
 import com.project.auth.config.auth.security.OAuth2LoginFailureHandler;
 import com.project.auth.config.auth.security.OAuth2LoginSuccessHandler;
 import com.project.auth.config.auth.security.SecurityExceptionHandler;
+import com.project.auth.presentation.support.response.ApiResultFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -26,13 +27,19 @@ public class OAuth2SecurityConfiguration {
     }
 
     @Bean
-    public OAuth2LoginFailureHandler oAuth2LoginFailureHandler(ObjectMapper objectMapper) {
-        return new OAuth2LoginFailureHandler(objectMapper);
+    public OAuth2LoginFailureHandler oAuth2LoginFailureHandler(
+            ObjectMapper objectMapper,
+            ApiResultFactory apiResultFactory
+    ) {
+        return new OAuth2LoginFailureHandler(objectMapper, apiResultFactory);
     }
 
     @Bean
-    public SecurityExceptionHandler securityExceptionHandler(ObjectMapper objectMapper) {
-        return new SecurityExceptionHandler(objectMapper);
+    public SecurityExceptionHandler securityExceptionHandler(
+            ObjectMapper objectMapper,
+            ApiResultFactory apiResultFactory
+    ) {
+        return new SecurityExceptionHandler(objectMapper, apiResultFactory);
     }
 
     @Bean

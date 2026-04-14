@@ -68,7 +68,7 @@ class ExceptionHandlingIntegrationTest {
     }
 
     @Test
-    void authenticated_user_without_required_role_returns_403_json_and_logs_masked_actor(
+    void authenticated_user_without_required_role_returns_403_json_without_exposing_principal(
             CapturedOutput output
     ) throws Exception {
         mockMvc.perform(get("/test-support/admin").with(user("alice@example.com").roles("USER")))
@@ -82,7 +82,7 @@ class ExceptionHandlingIntegrationTest {
                 .andExpect(jsonPath("$.timestamp", not(blankOrNullString())));
 
         assertThat(output).contains("traceId=");
-        assertThat(output).contains("Access denied. actorId=al***@example.com method=GET requestPath=/test-support/admin");
+        assertThat(output).contains("Access denied. method=GET requestPath=/test-support/admin");
         assertThat(output).doesNotContain("principal=alice@example.com");
     }
 

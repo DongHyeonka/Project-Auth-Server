@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.auth.config.web.RequestBoundApiResultFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,9 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,7 +43,10 @@ class OAuth2LoginFailureHandlerTest {
         auditLogger.addAppender(auditAppender);
 
         try {
-            OAuth2LoginFailureHandler handler = new OAuth2LoginFailureHandler(new ObjectMapper());
+            OAuth2LoginFailureHandler handler = new OAuth2LoginFailureHandler(
+                    new ObjectMapper(),
+                    new RequestBoundApiResultFactory(Clock.fixed(Instant.parse("2026-03-14T00:00:00Z"), ZoneOffset.UTC))
+            );
             MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login/oauth2/code/keycloak-google");
             MockHttpServletResponse response = new MockHttpServletResponse();
             MDC.put("traceId", "trace-oauth-1");

@@ -34,7 +34,13 @@ class SignUpServiceTest {
         Clock fixedClock = Clock.fixed(Instant.parse("2026-03-13T00:00:00Z"), ZoneOffset.UTC);
         auditEventPublisher = new RecordingAuthAuditEventPublisher();
 
-        signUpService = new SignUpService(registerUserPort, passwordHasherPort, fixedClock, auditEventPublisher);
+        SignUpRegistrationService signUpRegistrationService = new SignUpRegistrationService(
+                registerUserPort,
+                passwordHasherPort,
+                fixedClock,
+                auditEventPublisher
+        );
+        signUpService = new SignUpService(signUpRegistrationService);
     }
 
     @Test
