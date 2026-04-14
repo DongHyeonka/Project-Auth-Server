@@ -6,6 +6,8 @@ import com.nimbusds.jose.JWSSigner;
 import com.project.auth.infrastructure.security.token.vault.VaultTransitClient;
 import com.project.auth.infrastructure.security.token.vault.VaultTransitJwtSigner;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -17,9 +19,19 @@ import java.net.http.HttpClient;
 @EnableConfigurationProperties({JwtProperties.class, JwtVaultProperties.class})
 public class JwtKeyConfiguration {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtKeyConfiguration.class);
+    private static final Logger audit = LoggerFactory.getLogger("audit.auth");
+
     @Bean
     public JwtSigningKeyMaterial jwtSigningKeyMaterial(JwtSigningKeySource jwtSigningKeySource) {
-        return jwtSigningKeySource.load();
+        log.info("JWT key source selected: {}", jwtSigningKeySource.getClass().getSimpleName());
+        JwtSigningKeyMaterial material = jwtSigningKeySource.load();
+        audit.atInfo()
+                .addKeyValue("eventType", "KEY_SOURCE_SELECTED")
+                .addKeyValue("source", jwtSigningKeySource.getClass().getSimpleName())
+                .addKeyValue("activeKeyId", material.activeKeyId())
+                .log("KEY_SOURCE_SELECTED");
+        return material;
     }
 
     @Bean

@@ -6,6 +6,9 @@ import com.project.auth.application.auth.oauth.login.port.in.OAuthLoginUseCase;
 import com.project.auth.application.auth.oauth.login.port.out.IssueOAuthLoginTokenPort;
 import com.project.auth.application.auth.oauth.login.port.out.LoadOAuthUserPort;
 import com.project.auth.application.auth.oauth.login.port.out.RegisterOAuthUserPort;
+import com.project.auth.application.support.audit.AuthAuditEvent;
+import com.project.auth.application.support.audit.AuthAuditFields;
+import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import com.project.auth.application.user.exception.DuplicateUserEmailException;
 import com.project.auth.domain.user.model.User;
 
@@ -20,12 +23,14 @@ public class OAuthLoginService implements OAuthLoginUseCase {
     private final RegisterOAuthUserPort registerOAuthUserPort;
     private final IssueOAuthLoginTokenPort issueOAuthLoginTokenPort;
     private final Clock clock;
+    private final AuthAuditEventPublisher authAuditEventPublisher;
 
     public OAuthLoginService(
             LoadOAuthUserPort loadOAuthUserPort,
             RegisterOAuthUserPort registerOAuthUserPort,
             IssueOAuthLoginTokenPort issueOAuthLoginTokenPort,
-            Clock clock
+            Clock clock,
+            AuthAuditEventPublisher authAuditEventPublisher
     ) {
         this.loadOAuthUserPort = Objects.requireNonNull(loadOAuthUserPort, "loadOAuthUserPort must not be null");
         this.registerOAuthUserPort = Objects.requireNonNull(
@@ -37,6 +42,10 @@ public class OAuthLoginService implements OAuthLoginUseCase {
                 "issueOAuthLoginTokenPort must not be null"
         );
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.authAuditEventPublisher = Objects.requireNonNull(
+                authAuditEventPublisher,
+                "authAuditEventPublisher must not be null"
+        );
     }
 
     @Override
@@ -48,11 +57,24 @@ public class OAuthLoginService implements OAuthLoginUseCase {
                 )
                 .orElseGet(() -> registerOAuthUser(validatedCommand));
 
-        return LoginResult.from(user, issueOAuthLoginTokenPort.issue(user));
+        LoginResult result = LoginResult.from(user, issueOAuthLoginTokenPort.issue(user));
+        authAuditEventPublisher.publish(AuthAuditEvent.info(
+                "OAUTH_LOGIN_SUCCESS",
+                "userIdHash", AuthAuditFields.userIdHash(user.getId()),
+                "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
+                "provider", user.getProvider()
+        ));
+        return result;
     }
 
     private User registerOAuthUser(ValidatedOAuthLoginCommand validatedCommand) {
         if (loadOAuthUserPort.existsByEmail(validatedCommand.email())) {
+            authAuditEventPublisher.publish(AuthAuditEvent.warn(
+                    "OAUTH_LOGIN_FAILURE",
+                    "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
+                    "provider", validatedCommand.provider(),
+                    "reason", "email_conflict"
+            ));
             throw new OAuthAccountConflictException();
         }
 
@@ -68,6 +90,12 @@ public class OAuthLoginService implements OAuthLoginUseCase {
         try {
             return registerOAuthUserPort.save(user);
         } catch (DuplicateUserEmailException exception) {
+            authAuditEventPublisher.publish(AuthAuditEvent.warn(
+                    "OAUTH_LOGIN_FAILURE",
+                    "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
+                    "provider", validatedCommand.provider(),
+                    "reason", "duplicate_email_race_condition"
+            ));
             throw new OAuthAccountConflictException();
         }
     }

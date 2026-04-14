@@ -13,6 +13,8 @@ import com.project.auth.application.auth.token.IssuedAccessToken;
 import com.project.auth.domain.user.model.User;
 import com.project.auth.infrastructure.support.exception.InfrastructureErrorCode;
 import com.project.auth.infrastructure.support.exception.InfrastructureException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -20,6 +22,8 @@ import java.time.Instant;
 import java.util.Objects;
 
 public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort, IssueOAuthLoginTokenPort {
+
+    private static final Logger audit = LoggerFactory.getLogger("audit.auth");
 
     private static final String TOKEN_TYPE = "Bearer";
     private static final JWSAlgorithm SIGNATURE_ALGORITHM = JWSAlgorithm.RS256;
@@ -63,6 +67,12 @@ public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort, IssueOA
                 .build();
 
         String tokenValue = signToken(claims);
+        audit.atInfo()
+                .addKeyValue("eventType", "TOKEN_ISSUED")
+                .addKeyValue("subject", user.getId())
+                .addKeyValue("keyId", keyId)
+                .addKeyValue("expiresInSeconds", accessTokenExpiration.getSeconds())
+                .log("TOKEN_ISSUED");
 
         return new IssuedAccessToken(
                 issuer,

@@ -1,5 +1,8 @@
 package com.project.auth.config.auth.security;
 
+import com.project.auth.config.logging.LogSanitizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
@@ -10,6 +13,7 @@ import java.io.IOException;
 
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
+    private static final Logger audit = LoggerFactory.getLogger("audit.auth");
     private static final String OAUTH_LOGIN_COMPLETION_PATH = "/api/v1/auth/oauth2/complete";
 
     public OAuth2LoginSuccessHandler() {
@@ -22,6 +26,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             HttpServletResponse response,
             Authentication authentication
     ) throws IOException, ServletException {
+        audit.atInfo()
+                .addKeyValue("eventType", "OAUTH_AUTHENTICATION_SUCCESS")
+                .addKeyValue("actorId", LogSanitizer.actorId(authentication.getName()))
+                .log("OAUTH_AUTHENTICATION_SUCCESS");
         setDefaultTargetUrl(OAUTH_LOGIN_COMPLETION_PATH);
         clearAuthenticationAttributes(request);
         super.onAuthenticationSuccess(request, response, authentication);

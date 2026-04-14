@@ -1,5 +1,8 @@
 package com.project.auth.application.user.signup;
 
+import com.project.auth.application.support.audit.AuthAuditEvent;
+import com.project.auth.application.support.audit.AuthAuditFields;
+import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import com.project.auth.application.user.exception.DuplicateUserEmailException;
 import com.project.auth.application.user.signup.port.in.SignUpUseCase;
 import com.project.auth.application.user.signup.port.out.PasswordHasherPort;
@@ -16,15 +19,21 @@ public class SignUpService implements SignUpUseCase {
     private final RegisterUserPort registerUserPort;
     private final PasswordHasherPort passwordHasherPort;
     private final Clock clock;
+    private final AuthAuditEventPublisher authAuditEventPublisher;
 
     public SignUpService(
             RegisterUserPort registerUserPort,
             PasswordHasherPort passwordHasherPort,
-            Clock clock
+            Clock clock,
+            AuthAuditEventPublisher authAuditEventPublisher
     ) {
         this.registerUserPort = Objects.requireNonNull(registerUserPort, "registerUserPort must not be null");
         this.passwordHasherPort = Objects.requireNonNull(passwordHasherPort, "passwordHasherPort must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.authAuditEventPublisher = Objects.requireNonNull(
+                authAuditEventPublisher,
+                "authAuditEventPublisher must not be null"
+        );
     }
 
     @Override
@@ -32,6 +41,11 @@ public class SignUpService implements SignUpUseCase {
         ValidatedSignUpCommand validatedCommand = SignUpCommandValidator.validate(command);
 
         if (registerUserPort.existsByEmail(validatedCommand.email())) {
+            authAuditEventPublisher.publish(AuthAuditEvent.warn(
+                    "SIGNUP_FAILURE",
+                    "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
+                    "reason", "duplicate_email"
+            ));
             throw new DuplicateUserEmailException();
         }
 
@@ -44,6 +58,11 @@ public class SignUpService implements SignUpUseCase {
         );
 
         User savedUser = registerUserPort.save(user);
+        authAuditEventPublisher.publish(AuthAuditEvent.info(
+                "SIGNUP_SUCCESS",
+                "userIdHash", AuthAuditFields.userIdHash(savedUser.getId()),
+                "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email())
+        ));
         return SignUpResult.from(savedUser);
     }
 }

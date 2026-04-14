@@ -5,6 +5,8 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(prefix = "app.security.jwt.vault", name = "enabled", havingValue = "false", matchIfMissing = true)
 public class ConfiguredJwtSigningKeySource implements JwtSigningKeySource {
 
+    private static final Logger log = LoggerFactory.getLogger(ConfiguredJwtSigningKeySource.class);
     private static final int RSA_KEY_SIZE = 2048;
 
     private final ResolvedJwtKeyMaterial resolvedJwtKeyMaterial;
@@ -51,6 +54,8 @@ public class ConfiguredJwtSigningKeySource implements JwtSigningKeySource {
 
     private ResolvedJwtKeyMaterial resolveKeyMaterial(JwtProperties jwtProperties) {
         if (jwtProperties.keys().isEmpty() && jwtProperties.generateKeyPairOnStartup()) {
+            log.info("No configured JWT keys found. Generating local RSA-{} key pair: activeKeyId={}",
+                    RSA_KEY_SIZE, jwtProperties.activeKeyId());
             return generateSingleLocalKeyMaterial(jwtProperties.activeKeyId());
         }
 
@@ -66,6 +71,9 @@ public class ConfiguredJwtSigningKeySource implements JwtSigningKeySource {
         if (!activeKey.isPrivate()) {
             throw new IllegalStateException("Active JWT key must include a private key.");
         }
+
+        log.info("Configured JWT keys parsed successfully: activeKeyId={}, totalKeys={}",
+                jwtProperties.activeKeyId(), keysById.size());
 
         List<JWK> publicKeys = keysById.values().stream()
                 .map(key -> (JWK) key.toPublicJWK())

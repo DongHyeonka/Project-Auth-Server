@@ -6,6 +6,8 @@ import com.project.auth.application.auth.login.LoginResult;
 import com.project.auth.application.auth.oauth.login.port.out.IssueOAuthLoginTokenPort;
 import com.project.auth.application.auth.oauth.login.port.out.LoadOAuthUserPort;
 import com.project.auth.application.auth.oauth.login.port.out.RegisterOAuthUserPort;
+import com.project.auth.application.support.audit.AuthAuditEvent;
+import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import com.project.auth.application.auth.token.IssuedAccessToken;
 import com.project.auth.domain.user.model.AuthProvider;
 import com.project.auth.domain.user.model.User;
@@ -16,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class OAuthLoginServiceTest {
 
     private OAuthLoginService oAuthLoginService;
+    private RecordingAuthAuditEventPublisher auditEventPublisher;
 
     @BeforeEach
     void setUp() {
@@ -39,12 +44,14 @@ class OAuthLoginServiceTest {
                 Instant.parse("2026-03-14T00:30:00Z")
         );
         Clock fixedClock = Clock.fixed(Instant.parse("2026-03-14T00:00:00Z"), ZoneOffset.UTC);
+        auditEventPublisher = new RecordingAuthAuditEventPublisher();
 
         oAuthLoginService = new OAuthLoginService(
                 fakeOAuthUserStore,
                 fakeOAuthUserStore,
                 issueOAuthLoginTokenPort,
-                fixedClock
+                fixedClock,
+                auditEventPublisher
         );
     }
 
@@ -60,6 +67,15 @@ class OAuthLoginServiceTest {
         assertThat(result.provider()).isEqualTo("GOOGLE");
         assertThat(result.email()).isEqualTo("google-user@example.com");
         assertThat(result.accessToken()).isEqualTo("oauth-access-token");
+        assertThat(auditEventPublisher.events)
+                .singleElement()
+                .satisfies(event -> {
+                    assertThat(event.eventType()).isEqualTo("OAUTH_LOGIN_SUCCESS");
+                    assertThat(event.fields())
+                            .containsEntry("emailMasked", "go***@example.com")
+                            .containsKey("userIdHash")
+                            .doesNotContainEntry("email", "google-user@example.com");
+                });
     }
 
     @Test
@@ -97,6 +113,9 @@ class OAuthLoginServiceTest {
                 "duplicate@example.com",
                 "깃허브유저"
         ))).isInstanceOf(OAuthAccountConflictException.class);
+
+        assertThat(auditEventPublisher.events.getLast().eventType()).isEqualTo("OAUTH_LOGIN_FAILURE");
+        assertThat(auditEventPublisher.events.getLast().fields()).containsEntry("reason", "email_conflict");
     }
 
     @Test
@@ -107,6 +126,16 @@ class OAuthLoginServiceTest {
                 "not-an-email",
                 "A"
         ))).isInstanceOf(InvalidOAuthUserInfoException.class);
+    }
+
+    private static final class RecordingAuthAuditEventPublisher implements AuthAuditEventPublisher {
+
+        private final List<AuthAuditEvent> events = new ArrayList<>();
+
+        @Override
+        public void publish(AuthAuditEvent event) {
+            events.add(event);
+        }
     }
 
     private static final class FakeOAuthUserStore implements LoadOAuthUserPort, RegisterOAuthUserPort {

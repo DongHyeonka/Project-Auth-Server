@@ -38,6 +38,18 @@ spring:
               - profile
               - email
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,loggers,httpexchanges
+  endpoint:
+    health:
+      show-details: when-authorized
+  server:
+    address: 127.0.0.1
+    port: ${MANAGEMENT_SERVER_PORT:9090}
+
 app:
   persistence:
     migration:

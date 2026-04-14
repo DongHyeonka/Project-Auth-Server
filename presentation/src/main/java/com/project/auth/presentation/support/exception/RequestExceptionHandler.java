@@ -28,7 +28,7 @@ public class RequestExceptionHandler {
     public ResponseEntity<ApiResult<Void>> handleMessageNotReadableException(
             HttpMessageNotReadableException exception
     ) {
-        log.warn("Request body not readable: {}", exception.getMessage());
+        log.warn("Request body not readable. errorCode={}", PresentationErrorCode.INVALID_REQUEST_BODY.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.INVALID_REQUEST_BODY))
                 .body(ApiResult.failure(
@@ -41,7 +41,8 @@ public class RequestExceptionHandler {
     public ResponseEntity<ApiResult<Void>> handleMethodNotSupportedException(
             HttpRequestMethodNotSupportedException exception
     ) {
-        log.warn("Method not supported: {} {}", exception.getMethod(), exception.getMessage());
+        log.warn("Method not supported. method={} errorCode={}",
+                normalizeLogValue(exception.getMethod()), PresentationErrorCode.METHOD_NOT_ALLOWED.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.METHOD_NOT_ALLOWED))
                 .body(ApiResult.failure(
@@ -54,7 +55,8 @@ public class RequestExceptionHandler {
     public ResponseEntity<ApiResult<Void>> handleMissingParameterException(
             MissingServletRequestParameterException exception
     ) {
-        log.warn("Missing request parameter: {}", exception.getParameterName());
+        log.warn("Missing request parameter. parameter={} errorCode={}",
+                normalizeLogValue(exception.getParameterName()), PresentationErrorCode.MISSING_PARAMETER.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.MISSING_PARAMETER))
                 .body(ApiResult.failure(
@@ -67,7 +69,8 @@ public class RequestExceptionHandler {
     public ResponseEntity<ApiResult<Void>> handleTypeMismatchException(
             TypeMismatchException exception
     ) {
-        log.warn("Type mismatch for parameter '{}': {}", exception.getPropertyName(), exception.getMessage());
+        log.warn("Type mismatch for parameter. parameter={} errorCode={}",
+                normalizeLogValue(exception.getPropertyName()), PresentationErrorCode.INVALID_INPUT.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.INVALID_INPUT))
                 .body(ApiResult.failure(
@@ -80,7 +83,9 @@ public class RequestExceptionHandler {
     public ResponseEntity<ApiResult<Void>> handleMediaTypeNotSupportedException(
             HttpMediaTypeNotSupportedException exception
     ) {
-        log.warn("Unsupported media type: {}", exception.getContentType());
+        log.warn("Unsupported media type. contentType={} errorCode={}",
+                normalizeLogValue(String.valueOf(exception.getContentType())),
+                PresentationErrorCode.UNSUPPORTED_MEDIA_TYPE.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.UNSUPPORTED_MEDIA_TYPE))
                 .body(ApiResult.failure(
@@ -93,7 +98,7 @@ public class RequestExceptionHandler {
     public ResponseEntity<ApiResult<Void>> handleMediaTypeNotAcceptableException(
             HttpMediaTypeNotAcceptableException exception
     ) {
-        log.warn("Not acceptable media type: {}", exception.getMessage());
+        log.warn("Not acceptable media type. errorCode={}", PresentationErrorCode.NOT_ACCEPTABLE.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.NOT_ACCEPTABLE))
                 .body(ApiResult.failure(
@@ -106,7 +111,8 @@ public class RequestExceptionHandler {
     public ResponseEntity<ApiResult<Void>> handleMissingRequestHeaderException(
             MissingRequestHeaderException exception
     ) {
-        log.warn("Missing request header: {}", exception.getHeaderName());
+        log.warn("Missing request header. header={} errorCode={}",
+                normalizeLogValue(exception.getHeaderName()), PresentationErrorCode.MISSING_HEADER.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.MISSING_HEADER))
                 .body(ApiResult.failure(
@@ -119,7 +125,7 @@ public class RequestExceptionHandler {
     public ResponseEntity<ApiResult<Void>> handleServletRequestBindingException(
             ServletRequestBindingException exception
     ) {
-        log.warn("Request binding failed: {}", exception.getMessage());
+        log.warn("Request binding failed. errorCode={}", PresentationErrorCode.REQUEST_BINDING_FAILED.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.REQUEST_BINDING_FAILED))
                 .body(ApiResult.failure(
@@ -132,12 +138,35 @@ public class RequestExceptionHandler {
     public ResponseEntity<ApiResult<Void>> handleNoResourceFoundException(
             NoResourceFoundException exception
     ) {
-        log.warn("No resource found: {}", exception.getMessage());
+        log.warn("No resource found. resourcePath={} errorCode={}",
+                normalizeLogValue(exception.getResourcePath()), PresentationErrorCode.RESOURCE_NOT_FOUND.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.RESOURCE_NOT_FOUND))
                 .body(ApiResult.failure(
                         PresentationErrorCode.RESOURCE_NOT_FOUND.code(),
                         PresentationErrorCode.RESOURCE_NOT_FOUND.message()
                 ));
+    }
+
+    private static String normalizeLogValue(String value) {
+        if (value == null || value.isBlank()) {
+            return "-";
+        }
+
+        int maxLength = 200;
+        StringBuilder builder = new StringBuilder(Math.min(value.length(), maxLength));
+        for (int index = 0; index < value.length() && builder.length() < maxLength; index++) {
+            char character = value.charAt(index);
+            if (Character.isISOControl(character) || Character.isWhitespace(character) || character == '='
+                    || character == '|') {
+                builder.append('_');
+            } else {
+                builder.append(character);
+            }
+        }
+        if (value.length() > maxLength) {
+            builder.append("...");
+        }
+        return builder.toString();
     }
 }

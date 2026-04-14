@@ -6,6 +6,8 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.project.auth.infrastructure.security.token.vault.VaultTransitClient;
 import com.project.auth.infrastructure.security.token.vault.VaultTransitKeyMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
@@ -19,6 +21,8 @@ import java.util.Base64;
 @Component
 @ConditionalOnProperty(prefix = "app.security.jwt.vault", name = "enabled", havingValue = "true")
 public class VaultTransitJwtSigningKeySource implements JwtSigningKeySource {
+
+    private static final Logger log = LoggerFactory.getLogger(VaultTransitJwtSigningKeySource.class);
 
     private final JwtProperties jwtProperties;
     private final JwtVaultProperties jwtVaultProperties;
@@ -36,11 +40,17 @@ public class VaultTransitJwtSigningKeySource implements JwtSigningKeySource {
 
     @Override
     public JwtSigningKeyMaterial load() {
+        log.info("Loading JWT signing key from Vault Transit: mountPath={}, keyName={}",
+                jwtVaultProperties.mountPath(), jwtVaultProperties.transitKeyName());
+
         VaultTransitKeyMetadata keyMetadata = vaultTransitClient.readKey(
                 jwtVaultProperties.mountPath(),
                 jwtVaultProperties.transitKeyName()
         );
         RSAKey publicJwk = toPublicJwk(keyMetadata.publicKey());
+
+        log.info("Vault Transit JWT key loaded successfully: activeKeyId={}, version={}",
+                jwtProperties.activeKeyId(), keyMetadata.latestVersion());
 
         return new JwtSigningKeyMaterial(
                 jwtProperties.activeKeyId(),

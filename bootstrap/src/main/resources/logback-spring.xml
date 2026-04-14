@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%clr(%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr([traceId=%X{traceId:-}]){yellow} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m %kvp%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+
+    <springProperty scope="context" name="AUDIT_FILE_PATH" source="app.logging.audit.file"
+                    defaultValue="./logs/audit/auth.log"/>
+    <springProperty scope="context" name="AUDIT_MAX_HISTORY" source="app.logging.audit.max-history"
+                    defaultValue="30"/>
+    <springProperty scope="context" name="AUDIT_MAX_FILE_SIZE" source="app.logging.audit.max-file-size"
+                    defaultValue="50MB"/>
+    <springProperty scope="context" name="AUDIT_TOTAL_SIZE_CAP" source="app.logging.audit.total-size-cap"
+                    defaultValue="2GB"/>
+
+    <property name="AUDIT_FILE_PATTERN"
+              value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] [%logger{36}] [traceId=%X{traceId:-} clientIp=%X{clientIp:-} userAgent=%X{userAgent:-}] %msg %kvp%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+
+    <!-- Default: plain console appender (local, dev, test, and any unspecified profile) -->
+    <springProfile name="!prod">
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+    </springProfile>
+
+    <!-- prod: JSON structured console appender -->
+    <springProfile name="prod">
+        <include resource="org/springframework/boot/logging/logback/structured-console-appender.xml"/>
+    </springProfile>
+
+    <springProfile name="audit-file">
+        <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${AUDIT_FILE_PATH}</file>
+            <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                <pattern>${AUDIT_FILE_PATTERN}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${AUDIT_FILE_PATH}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+                <maxFileSize>${AUDIT_MAX_FILE_SIZE}</maxFileSize>
+                <maxHistory>${AUDIT_MAX_HISTORY}</maxHistory>
+                <totalSizeCap>${AUDIT_TOTAL_SIZE_CAP}</totalSizeCap>
+            </rollingPolicy>
+        </appender>
+    </springProfile>
+
+    <!-- Audit logger: console is the default source of truth. File logging is opt-in via the audit-file profile. -->
+    <springProfile name="!audit-file">
+        <logger name="audit.auth" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+        </logger>
+    </springProfile>
+
+    <springProfile name="audit-file">
+        <logger name="audit.auth" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="AUDIT_FILE"/>
+        </logger>
+    </springProfile>
+
+    <!-- Access logger (all profiles) -->
+    <logger name="http.access" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- local profile: default + hibernate SQL debug -->
+    <springProfile name="local">
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+    </springProfile>
+
+    <!-- dev profile: selective debug -->
+    <springProfile name="dev">
+        <logger name="com.project.auth" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        <logger name="org.springframework.security" level="INFO"/>
+    </springProfile>
+
+    <!-- prod profile: noisy package suppression -->
+    <springProfile name="prod">
+        <logger name="org.hibernate" level="WARN"/>
+        <logger name="org.springframework.security" level="WARN"/>
+        <logger name="org.flywaydb" level="WARN"/>
+    </springProfile>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

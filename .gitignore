@@ -40,7 +40,5 @@ out/
 .env.local
 .env.dev
 .env.prod
+logs/
 .codex
-docs/
-AGENTS.md
-CLAUDE.md

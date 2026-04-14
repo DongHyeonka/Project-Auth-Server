@@ -10,12 +10,33 @@ spring:
         format_sql: true
         jdbc:
           time_zone: UTC
+server:
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      internal-proxies: '${SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES:10\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[0-1])\.[0-9]+\.[0-9]+|127\.[0-9]+\.[0-9]+\.[0-9]+}'
 
+logging:
 app:
   docs:
     title: ${APP_DOCS_TITLE:Project Auth Server API}
     description: ${APP_DOCS_DESCRIPTION:인증 서버의 OpenAPI 문서입니다.}
     version: ${APP_DOCS_VERSION:v1}
+  logging:
+    audit:
+      file: ${APP_LOGGING_AUDIT_FILE:./logs/audit/auth.log}
+      max-history: ${APP_LOGGING_AUDIT_MAX_HISTORY:30}
+      max-file-size: ${APP_LOGGING_AUDIT_MAX_FILE_SIZE:50MB}
+      total-size-cap: ${APP_LOGGING_AUDIT_TOTAL_SIZE_CAP:2GB}
+    access:
+      excluded-path-prefixes:
+        - /actuator
+        - /livez
+        - /readyz
+        - /swagger-ui
+        - /v3/api-docs
+        - /auth-login.html
+        - /favicon.ico
   persistence:
     migration:
       location: ${APP_PERSISTENCE_MIGRATION_LOCATION:classpath:db/migration}

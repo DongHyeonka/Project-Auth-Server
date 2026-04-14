@@ -38,6 +38,11 @@ spring:
               - profile
               - email
 
+logging:
+  structured:
+    format:
+      console: logstash
+
 app:
   persistence:
     migration:
