@@ -9,6 +9,8 @@ Read order:
 6. `/docs/standards/ops/standard-application-priority.md`
 7. current request
 
+> **WARNING TO AI AGENTS**: You MUST READ the relevant files in `/docs/standards/**` and `/docs/examples/**` with file reading tools BEFORE proposing or writing code for any task. DO NOT rely on generic framework knowledge, memory, assumptions, or existing code patterns alone. The standard and example documents contain mandatory project rules for architecture, layer boundaries, design, language style, Spring, web contracts, integration, observability, DB, testing, operations, and documentation. Producing analysis, boilerplate code, manifests, tests, refactors, or docs without relevant standards/examples compliance is a critical failure.
+
 Goal:
 - prefer clear boundaries over quick implementation
 - prefer maintainable structure over local convenience
@@ -55,6 +57,7 @@ Routing:
 - external call/retry/timeout/fallback -> `/docs/standards/integration/**`
 - logging/trace/health/pii -> `/docs/standards/observability/**`
 - PostgreSQL/query/transaction/concurrency -> `/docs/standards/db/**`
+- test scope/fixture/mock/repository/@SpringBootTest -> `/docs/standards/testing/**`
 - approved examples -> `/docs/examples/**`
 
 Before editing:

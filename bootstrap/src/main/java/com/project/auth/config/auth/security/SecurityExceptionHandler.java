@@ -1,14 +1,10 @@
 package com.project.auth.config.auth.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.auth.application.auth.exception.AuthErrorCode;
+import com.project.auth.application.support.audit.AuthAuditEventType;
+import com.project.auth.application.support.audit.AuthAuditFields;
 import com.project.auth.config.logging.LogSanitizer;
-import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
-import com.project.auth.presentation.support.response.ApiResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,12 +12,12 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.Objects;
 
 public class SecurityExceptionHandler implements AuthenticationEntryPoint, AccessDeniedHandler {
 
@@ -30,10 +26,13 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
     private static final Logger log = LoggerFactory.getLogger(SecurityExceptionHandler.class);
     private static final Logger audit = LoggerFactory.getLogger("audit.auth");
 
-    private final ObjectMapper objectMapper;
+    private final HandlerExceptionResolver handlerExceptionResolver;
 
-    public SecurityExceptionHandler(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public SecurityExceptionHandler(HandlerExceptionResolver handlerExceptionResolver) {
+        this.handlerExceptionResolver = Objects.requireNonNull(
+                handlerExceptionResolver,
+                "handlerExceptionResolver must not be null"
+        );
     }
 
     @Override
@@ -41,24 +40,9 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
             HttpServletRequest request,
             HttpServletResponse response,
             AuthenticationException authException
-    ) throws IOException {
-        String actorId = resolveActorId(request);
-        String requestPath = LogSanitizer.requestPath(request.getRequestURI());
-        log.warn(
-                "Authentication required. actorId={} method={} requestPath={}",
-                actorId,
-                request.getMethod(),
-                requestPath
-        );
-        audit.atWarn()
-                .addKeyValue("eventType", "AUTHENTICATION_REQUIRED")
-                .addKeyValue("actorId", actorId)
-                .addKeyValue("method", request.getMethod())
-                .addKeyValue("requestPath", requestPath)
-                .log("AUTHENTICATION_REQUIRED");
-
-        HttpStatus status = ApiErrorHttpStatusMapper.map(AuthErrorCode.AUTHENTICATION_REQUIRED);
-        writeErrorResponse(response, status, AuthErrorCode.AUTHENTICATION_REQUIRED);
+    ) {
+        recordAudit(request, AuthAuditEventType.AUTHENTICATION_REQUIRED, "Authentication required.");
+        handlerExceptionResolver.resolveException(request, response, null, authException);
     }
 
     @Override
@@ -66,38 +50,27 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
             HttpServletRequest request,
             HttpServletResponse response,
             AccessDeniedException accessDeniedException
-    ) throws IOException {
+    ) {
+        recordAudit(request, AuthAuditEventType.ACCESS_DENIED, "Access denied.");
+        handlerExceptionResolver.resolveException(request, response, null, accessDeniedException);
+    }
+
+    private void recordAudit(HttpServletRequest request, AuthAuditEventType eventType, String message) {
         String actorId = resolveActorId(request);
         String requestPath = LogSanitizer.requestPath(request.getRequestURI());
         log.warn(
-                "Access denied. actorId={} method={} requestPath={}",
+                "{} actorId={} method={} requestPath={}",
+                message,
                 actorId,
                 request.getMethod(),
                 requestPath
         );
         audit.atWarn()
-                .addKeyValue("eventType", "ACCESS_DENIED")
-                .addKeyValue("actorId", actorId)
-                .addKeyValue("method", request.getMethod())
-                .addKeyValue("requestPath", requestPath)
-                .log("ACCESS_DENIED");
-
-        HttpStatus status = ApiErrorHttpStatusMapper.map(AuthErrorCode.ACCESS_DENIED);
-        writeErrorResponse(response, status, AuthErrorCode.ACCESS_DENIED);
-    }
-
-    private void writeErrorResponse(
-            HttpServletResponse response,
-            HttpStatus status,
-            AuthErrorCode errorCode
-    ) throws IOException {
-        response.setStatus(status.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(
-                response.getWriter(),
-                ApiResult.failure(errorCode.code(), errorCode.message())
-        );
+                .addKeyValue(AuthAuditFields.EVENT_TYPE, eventType.code())
+                .addKeyValue(AuthAuditFields.ACTOR_ID, actorId)
+                .addKeyValue(AuthAuditFields.METHOD, request.getMethod())
+                .addKeyValue(AuthAuditFields.REQUEST_PATH, requestPath)
+                .log(eventType.code());
     }
 
     private String resolveActorId(HttpServletRequest request) {

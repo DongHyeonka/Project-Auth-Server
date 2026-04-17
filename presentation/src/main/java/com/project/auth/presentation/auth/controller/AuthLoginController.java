@@ -7,6 +7,7 @@ import com.project.auth.presentation.auth.dto.LoginRequest;
 import com.project.auth.presentation.auth.dto.LoginResponse;
 import com.project.auth.presentation.auth.mapper.AuthPresentationMapper;
 import com.project.auth.presentation.support.response.ApiResult;
+import com.project.auth.presentation.support.response.ApiResultFactory;
 import com.project.auth.presentation.support.response.ApiSuccessCode;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,10 +26,16 @@ public class AuthLoginController implements AuthLoginApiDocs {
 
     private final LoginUseCase loginUseCase;
     private final AuthPresentationMapper authPresentationMapper;
+    private final ApiResultFactory apiResultFactory;
 
-    public AuthLoginController(LoginUseCase loginUseCase, AuthPresentationMapper authPresentationMapper) {
+    public AuthLoginController(
+            LoginUseCase loginUseCase,
+            AuthPresentationMapper authPresentationMapper,
+            ApiResultFactory apiResultFactory
+    ) {
         this.loginUseCase = loginUseCase;
         this.authPresentationMapper = authPresentationMapper;
+        this.apiResultFactory = apiResultFactory;
     }
 
     @Override
@@ -37,6 +44,6 @@ public class AuthLoginController implements AuthLoginApiDocs {
         LoginResult loginResult = loginUseCase.login(authPresentationMapper.toCommand(request));
         LoginResponse response = authPresentationMapper.toResponse(loginResult);
 
-        return ResponseEntity.ok(ApiResult.success(LOGIN_SUCCEEDED.code(), LOGIN_SUCCEEDED.message(), response));
+        return ResponseEntity.ok(apiResultFactory.success(LOGIN_SUCCEEDED.code(), LOGIN_SUCCEEDED.message(), response));
     }
 }

@@ -10,6 +10,8 @@ import com.nimbusds.jwt.SignedJWT;
 import com.project.auth.application.auth.login.port.out.IssueLoginTokenPort;
 import com.project.auth.application.auth.oauth.login.port.out.IssueOAuthLoginTokenPort;
 import com.project.auth.application.auth.token.IssuedAccessToken;
+import com.project.auth.application.support.audit.AuthAuditEventType;
+import com.project.auth.application.support.audit.AuthAuditFields;
 import com.project.auth.domain.user.model.User;
 import com.project.auth.infrastructure.support.exception.InfrastructureErrorCode;
 import com.project.auth.infrastructure.support.exception.InfrastructureException;
@@ -68,11 +70,11 @@ public class NimbusJwtTokenIssuerAdapter implements IssueLoginTokenPort, IssueOA
 
         String tokenValue = signToken(claims);
         audit.atInfo()
-                .addKeyValue("eventType", "TOKEN_ISSUED")
-                .addKeyValue("subject", user.getId())
-                .addKeyValue("keyId", keyId)
-                .addKeyValue("expiresInSeconds", accessTokenExpiration.getSeconds())
-                .log("TOKEN_ISSUED");
+                .addKeyValue(AuthAuditFields.EVENT_TYPE, AuthAuditEventType.TOKEN_ISSUED.code())
+                .addKeyValue(AuthAuditFields.SUBJECT, user.getId())
+                .addKeyValue(AuthAuditFields.KEY_ID, keyId)
+                .addKeyValue(AuthAuditFields.EXPIRES_IN_SECONDS, accessTokenExpiration.getSeconds())
+                .log(AuthAuditEventType.TOKEN_ISSUED.code());
 
         return new IssuedAccessToken(
                 issuer,

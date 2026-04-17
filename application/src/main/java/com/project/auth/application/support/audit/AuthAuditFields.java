@@ -11,6 +11,18 @@ import java.util.UUID;
 
 public final class AuthAuditFields {
 
+    public static final String EVENT_TYPE = "eventType";
+    public static final String ACTOR_ID = "actorId";
+    public static final String USER_ID_HASH = "userIdHash";
+    public static final String EMAIL_MASKED = "emailMasked";
+    public static final String PROVIDER = "provider";
+    public static final String REASON = "reason";
+    public static final String METHOD = "method";
+    public static final String REQUEST_PATH = "requestPath";
+    public static final String KEY_ID = "keyId";
+    public static final String EXPIRES_IN_SECONDS = "expiresInSeconds";
+    public static final String SUBJECT = "subject";
+
     private static final String HASH_PREFIX = "sha256:";
     private static final int HASH_HEX_LENGTH = 16;
     private static final HexFormat HEX_FORMAT = HexFormat.of();

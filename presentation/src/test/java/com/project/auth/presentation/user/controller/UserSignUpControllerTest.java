@@ -3,6 +3,7 @@ package com.project.auth.presentation.user.controller;
 import com.project.auth.application.user.signup.SignUpResult;
 import com.project.auth.application.user.signup.port.in.SignUpUseCase;
 import com.project.auth.presentation.support.response.ApiSuccessCode;
+import com.project.auth.presentation.support.response.FixedApiResultFactory;
 import com.project.auth.presentation.user.dto.SignUpRequest;
 import com.project.auth.presentation.user.mapper.UserPresentationMapper;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,11 @@ class UserSignUpControllerTest {
                 Instant.parse("2026-03-13T00:00:00Z")
         );
         UserPresentationMapper userPresentationMapper = new UserPresentationMapper();
-        UserSignUpController controller = new UserSignUpController(signUpUseCase, userPresentationMapper);
+        UserSignUpController controller = new UserSignUpController(
+                signUpUseCase,
+                userPresentationMapper,
+                new FixedApiResultFactory()
+        );
 
         var response = controller.signUp(new SignUpRequest("tester@example.com", "password123", "테스터"));
 

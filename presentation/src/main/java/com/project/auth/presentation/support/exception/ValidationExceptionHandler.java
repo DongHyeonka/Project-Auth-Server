@@ -1,6 +1,7 @@
 package com.project.auth.presentation.support.exception;
 
 import com.project.auth.presentation.support.response.ApiResult;
+import com.project.auth.presentation.support.response.ApiResultFactory;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -26,6 +27,12 @@ public class ValidationExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ValidationExceptionHandler.class);
 
+    private final ApiResultFactory apiResultFactory;
+
+    public ValidationExceptionHandler(ApiResultFactory apiResultFactory) {
+        this.apiResultFactory = apiResultFactory;
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResult<Map<String, List<String>>>> handleValidationException(
             MethodArgumentNotValidException exception
@@ -39,7 +46,7 @@ public class ValidationExceptionHandler {
         log.warn("Validation failed: {}", errors);
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.INVALID_INPUT))
-                .body(ApiResult.failure(
+                .body(apiResultFactory.failure(
                         PresentationErrorCode.INVALID_INPUT.code(),
                         PresentationErrorCode.INVALID_INPUT.message(),
                         errors
@@ -61,7 +68,7 @@ public class ValidationExceptionHandler {
         log.warn("Constraint violation: {}", errors);
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.CONSTRAINT_VIOLATION))
-                .body(ApiResult.failure(
+                .body(apiResultFactory.failure(
                         PresentationErrorCode.CONSTRAINT_VIOLATION.code(),
                         PresentationErrorCode.CONSTRAINT_VIOLATION.message(),
                         errors
@@ -85,7 +92,7 @@ public class ValidationExceptionHandler {
         log.warn("Handler method validation failed: {}", errors);
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.INVALID_INPUT))
-                .body(ApiResult.failure(
+                .body(apiResultFactory.failure(
                         PresentationErrorCode.INVALID_INPUT.code(),
                         PresentationErrorCode.INVALID_INPUT.message(),
                         errors

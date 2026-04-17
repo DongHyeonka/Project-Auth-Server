@@ -3,13 +3,13 @@ spring:
     activate:
       on-profile: local
   datasource:
-    url: ${APP_DATASOURCE_URL:jdbc:h2:mem:project-auth-local;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
-    username: ${APP_DATASOURCE_USERNAME:sa}
-    password: ${APP_DATASOURCE_PASSWORD:}
-    driver-class-name: ${APP_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}
+    url: ${APP_DATASOURCE_URL:jdbc:postgresql://localhost:5432/project_auth}
+    username: ${APP_DATASOURCE_USERNAME:project_auth}
+    password: ${APP_DATASOURCE_PASSWORD:project_auth}
+    driver-class-name: ${APP_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
   security:
     oauth2:
       client:
@@ -39,9 +39,6 @@ spring:
               - email
 
 app:
-  persistence:
-    migration:
-      run-on-startup: ${APP_PERSISTENCE_MIGRATION_RUN_ON_STARTUP:false}
   security:
     jwt:
       issuer: ${APP_SECURITY_JWT_ISSUER:http://localhost:8080}

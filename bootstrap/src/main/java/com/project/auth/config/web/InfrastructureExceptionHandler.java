@@ -5,6 +5,7 @@ import com.project.auth.config.logging.LogSanitizer;
 import com.project.auth.infrastructure.support.exception.InfrastructureException;
 import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
 import com.project.auth.presentation.support.response.ApiResult;
+import com.project.auth.presentation.support.response.ApiResultFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,12 @@ public class InfrastructureExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(InfrastructureExceptionHandler.class);
 
+    private final ApiResultFactory apiResultFactory;
+
+    public InfrastructureExceptionHandler(ApiResultFactory apiResultFactory) {
+        this.apiResultFactory = apiResultFactory;
+    }
+
     @ExceptionHandler(InfrastructureException.class)
     public ResponseEntity<ApiResult<Void>> handleInfrastructureException(
             InfrastructureException exception,
@@ -40,7 +47,7 @@ public class InfrastructureExceptionHandler {
         );
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INTERNAL_SERVER_ERROR))
-                .body(ApiResult.failure(
+                .body(apiResultFactory.failure(
                         CommonErrorCode.INTERNAL_SERVER_ERROR.code(),
                         CommonErrorCode.INTERNAL_SERVER_ERROR.message()
                 ));

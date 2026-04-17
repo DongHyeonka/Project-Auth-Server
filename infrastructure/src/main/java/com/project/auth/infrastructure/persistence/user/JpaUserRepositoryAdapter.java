@@ -11,7 +11,6 @@ import com.project.auth.domain.user.model.UserEmail;
 import com.project.auth.infrastructure.persistence.user.mapper.UserPersistenceMapper;
 import com.project.auth.infrastructure.persistence.user.repository.UserJpaRepository;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -34,31 +33,27 @@ public class JpaUserRepositoryAdapter implements
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean existsByEmail(UserEmail email) {
         return userJpaRepository.existsByEmail(email.value());
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<User> findByEmail(UserEmail email) {
         return userJpaRepository.findByEmail(email.value())
                 .map(userPersistenceMapper::toDomain);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<User> findByProviderAndProviderSubject(AuthProvider provider, String providerSubject) {
         return userJpaRepository.findByProviderAndProviderSubject(provider, providerSubject)
                 .map(userPersistenceMapper::toDomain);
     }
 
     @Override
-    @Transactional
     public User save(User user) {
         try {
             return userPersistenceMapper.toDomain(
-                    userJpaRepository.save(userPersistenceMapper.toEntity(user))
+                    userJpaRepository.saveAndFlush(userPersistenceMapper.toEntity(user))
             );
         } catch (DataIntegrityViolationException exception) {
             throw new DuplicateUserEmailException();

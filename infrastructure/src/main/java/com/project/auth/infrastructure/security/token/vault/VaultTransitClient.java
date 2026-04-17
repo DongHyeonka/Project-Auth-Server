@@ -1,63 +1,56 @@
 package com.project.auth.infrastructure.security.token.vault;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Map;
-import java.util.Objects;
-
 import com.project.auth.infrastructure.support.exception.InfrastructureErrorCode;
 import com.project.auth.infrastructure.support.exception.InfrastructureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
+
+import java.util.Base64;
+import java.util.List;
+import java.util.Objects;
 
 public class VaultTransitClient {
 
     private static final Logger log = LoggerFactory.getLogger(VaultTransitClient.class);
+    private static final String API_VERSION = "v1";
+    private static final String KEYS_PATH = "keys";
+    private static final String SIGN_PATH = "sign";
+    private static final String SIGNATURE_ALGORITHM = "pkcs1v15";
+    private static final String HASH_ALGORITHM = "sha2-256";
 
-    private final String address;
-    private final String token;
-    private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
+    private final RestClient restClient;
 
-    public VaultTransitClient(
-            String address,
-            String token,
-            HttpClient httpClient,
-            ObjectMapper objectMapper
-    ) {
-        this.address = normalizeAddress(address);
-        this.token = Objects.requireNonNull(token, "token must not be null");
-        this.httpClient = Objects.requireNonNull(httpClient, "httpClient must not be null");
-        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
+    public VaultTransitClient(RestClient restClient) {
+        this.restClient = Objects.requireNonNull(restClient, "restClient must not be null");
     }
 
     public VaultTransitKeyMetadata readKey(String mountPath, String transitKeyName) {
-        JsonNode data = execute(
-                HttpRequest.newBuilder(buildUri("/v1/" + mountPath + "/keys/" + transitKeyName))
-                        .GET()
-                        .header("X-Vault-Token", token)
-                        .build()
-        ).path("data");
+        VaultTransitKeyResponse response = executeGet(
+                buildPath(mountPath, KEYS_PATH, transitKeyName),
+                VaultTransitKeyResponse.class
+        );
+        assertNoVaultErrors(response.errors());
 
-        if (!data.path("supports_signing").asBoolean(false)) {
+        VaultTransitKeyResponse.VaultTransitKeyData data = response.data();
+        if (data == null) {
+            throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Vault transit key response did not contain data.");
+        }
+
+        if (!data.supportsSigning()) {
             throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Configured Vault transit key does not support signing.");
         }
 
-        int latestVersion = data.path("latest_version").asInt();
-        String publicKey = data.path("keys")
-                .path(String.valueOf(latestVersion))
-                .path("public_key")
-                .asText();
+        int latestVersion = data.latestVersion();
+        VaultTransitKeyResponse.VaultTransitKeyVersion latestKey = data.keys() == null
+                ? null
+                : data.keys().get(String.valueOf(latestVersion));
+        String publicKey = latestKey == null ? null : latestKey.publicKey();
 
-        if (latestVersion <= 0 || publicKey.isBlank()) {
+        if (latestVersion <= 0 || publicKey == null || publicKey.isBlank()) {
             throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Vault transit key metadata does not contain a usable public key.");
         }
 
@@ -66,66 +59,95 @@ public class VaultTransitClient {
     }
 
     public String sign(String mountPath, String transitKeyName, byte[] input) {
-        String requestBody = writeRequestBody(Map.of(
-                "input", Base64.getEncoder().encodeToString(input),
-                "signature_algorithm", "pkcs1v15",
-                "hash_algorithm", "sha2-256"
-        ));
+        VaultTransitSignRequest requestBody = new VaultTransitSignRequest(
+                Base64.getEncoder().encodeToString(input),
+                SIGNATURE_ALGORITHM,
+                HASH_ALGORITHM
+        );
 
-        JsonNode data = execute(
-                HttpRequest.newBuilder(buildUri("/v1/" + mountPath + "/sign/" + transitKeyName))
-                        .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                        .header("X-Vault-Token", token)
-                        .header("Content-Type", "application/json")
-                        .build()
-        ).path("data");
+        VaultTransitSignResponse response = executePost(
+                buildPath(mountPath, SIGN_PATH, transitKeyName),
+                requestBody,
+                VaultTransitSignResponse.class
+        );
+        assertNoVaultErrors(response.errors());
 
-        String signature = data.path("signature").asText();
-        if (signature.isBlank()) {
+        String signature = response.data() == null ? null : response.data().signature();
+        if (signature == null || signature.isBlank()) {
             throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Vault transit signing response did not contain a signature.");
         }
 
         return signature;
     }
 
-    private JsonNode execute(HttpRequest request) {
+    private <T> T executeGet(String path, Class<T> responseType) {
         try {
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() / 100 != 2) {
-                throw new InfrastructureException(
-                        InfrastructureErrorCode.VAULT_TRANSIT_FAILED,
-                        "Vault transit request failed with status " + response.statusCode() + "."
-                );
-            }
-
-            JsonNode root = objectMapper.readTree(response.body());
-            if (root.has("errors") && root.path("errors").isArray() && !root.path("errors").isEmpty()) {
-                throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Vault transit request failed: " + root.path("errors"));
-            }
-
-            return root;
-        } catch (IOException | InterruptedException exception) {
-            if (exception instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
+            return restClient.get()
+                    .uri(path)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (request, response) -> {
+                        throw new InfrastructureException(
+                                InfrastructureErrorCode.VAULT_TRANSIT_FAILED,
+                                "Vault transit request failed with status " + response.getStatusCode().value() + "."
+                        );
+                    })
+                    .body(responseType);
+        } catch (InfrastructureException exception) {
+            throw exception;
+        } catch (ResourceAccessException exception) {
             throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Failed to call Vault transit API.", exception);
         }
     }
 
-    private String writeRequestBody(Map<String, Object> body) {
+    private <T> T executePost(String path, Object requestBody, Class<T> responseType) {
         try {
-            return objectMapper.writeValueAsString(body);
-        } catch (IOException exception) {
-            throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Failed to serialize Vault transit request body.", exception);
+            return restClient.post()
+                    .uri(path)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (request, response) -> {
+                        throw new InfrastructureException(
+                                InfrastructureErrorCode.VAULT_TRANSIT_FAILED,
+                                "Vault transit request failed with status " + response.getStatusCode().value() + "."
+                        );
+                    })
+                    .body(responseType);
+        } catch (InfrastructureException exception) {
+            throw exception;
+        } catch (ResourceAccessException exception) {
+            throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Failed to call Vault transit API.", exception);
         }
     }
 
-    private URI buildUri(String path) {
-        return URI.create(address + path);
+    private void assertNoVaultErrors(List<String> errors) {
+        if (errors != null && !errors.isEmpty()) {
+            throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Vault transit request failed: " + errors);
+        }
     }
 
-    private static String normalizeAddress(String address) {
-        Objects.requireNonNull(address, "address must not be null");
-        return address.endsWith("/") ? address.substring(0, address.length() - 1) : address;
+    private static String buildPath(String mountPath, String capabilityPath, String transitKeyName) {
+        return "/" + String.join(
+                "/",
+                API_VERSION,
+                normalizePathSegment(mountPath),
+                capabilityPath,
+                normalizePathSegment(transitKeyName)
+        );
+    }
+
+    private static String normalizePathSegment(String segment) {
+        Objects.requireNonNull(segment, "segment must not be null");
+        String normalized = segment.strip();
+        while (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        if (normalized.isBlank() || normalized.contains("..")) {
+            throw new InfrastructureException(InfrastructureErrorCode.VAULT_TRANSIT_FAILED, "Vault transit path segment is invalid.");
+        }
+        return normalized;
     }
 }

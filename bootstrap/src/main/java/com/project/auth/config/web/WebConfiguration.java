@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
+import java.time.Clock;
+
 @Configuration
 @EnableConfigurationProperties(AccessLogProperties.class)
 public class WebConfiguration {
@@ -28,5 +30,10 @@ public class WebConfiguration {
         registration.addUrlPatterns("/*");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
         return registration;
+    }
+
+    @Bean
+    public RequestBoundApiResultFactory apiResultFactory(Clock systemClock) {
+        return new RequestBoundApiResultFactory(systemClock);
     }
 }

@@ -7,6 +7,7 @@ import com.project.auth.presentation.user.dto.SignUpRequest;
 import com.project.auth.presentation.user.dto.SignUpResponse;
 import com.project.auth.presentation.user.mapper.UserPresentationMapper;
 import com.project.auth.presentation.support.response.ApiResult;
+import com.project.auth.presentation.support.response.ApiResultFactory;
 import com.project.auth.presentation.support.response.ApiSuccessCode;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,10 +27,16 @@ public class UserSignUpController implements UserSignUpApiDocs {
 
     private final SignUpUseCase signUpUseCase;
     private final UserPresentationMapper userPresentationMapper;
+    private final ApiResultFactory apiResultFactory;
 
-    public UserSignUpController(SignUpUseCase signUpUseCase, UserPresentationMapper userPresentationMapper) {
+    public UserSignUpController(
+            SignUpUseCase signUpUseCase,
+            UserPresentationMapper userPresentationMapper,
+            ApiResultFactory apiResultFactory
+    ) {
         this.signUpUseCase = signUpUseCase;
         this.userPresentationMapper = userPresentationMapper;
+        this.apiResultFactory = apiResultFactory;
     }
 
     @Override
@@ -39,6 +46,6 @@ public class UserSignUpController implements UserSignUpApiDocs {
         SignUpResponse response = userPresentationMapper.toResponse(signUpResult);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResult.success(USER_SIGNED_UP.code(), USER_SIGNED_UP.message(), response));
+                .body(apiResultFactory.success(USER_SIGNED_UP.code(), USER_SIGNED_UP.message(), response));
     }
 }

@@ -3,11 +3,14 @@ spring:
     name: project-auth-server
   profiles:
     default: local
+  flyway:
+    enabled: false
   jpa:
     open-in-view: false
     properties:
       hibernate:
         format_sql: true
+        default_schema: auth
         jdbc:
           time_zone: UTC
 server:
@@ -40,6 +43,7 @@ app:
   persistence:
     migration:
       location: ${APP_PERSISTENCE_MIGRATION_LOCATION:classpath:db/migration}
+      schema: ${APP_PERSISTENCE_MIGRATION_SCHEMA:auth}
   security:
     oauth2:
       google-registration-id: ${APP_SECURITY_OAUTH2_GOOGLE_REGISTRATION_ID:keycloak-google}

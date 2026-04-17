@@ -1,9 +1,10 @@
 package com.project.auth.presentation.support.exception;
 
-import com.project.auth.application.auth.exception.AuthErrorCode;
+import com.project.auth.application.support.exception.AuthErrorCode;
 import com.project.auth.application.support.exception.CommonErrorCode;
 import com.project.auth.application.support.exception.ErrorCode;
-import com.project.auth.application.user.exception.UserErrorCode;
+import com.project.auth.application.support.exception.ExternalErrorCode;
+import com.project.auth.application.support.exception.UserErrorCode;
 import org.springframework.http.HttpStatus;
 
 public final class ApiErrorHttpStatusMapper {
@@ -14,10 +15,13 @@ public final class ApiErrorHttpStatusMapper {
     public static HttpStatus map(ErrorCode errorCode) {
         return switch (errorCode) {
             case CommonErrorCode commonErrorCode -> mapCommon(commonErrorCode);
-            case PresentationErrorCode presentationErrorCode -> mapPresentation(presentationErrorCode);
             case AuthErrorCode authErrorCode -> mapAuth(authErrorCode);
             case UserErrorCode userErrorCode -> mapUser(userErrorCode);
-            default -> HttpStatus.INTERNAL_SERVER_ERROR;
+            case PresentationErrorCode presentationErrorCode -> mapPresentation(presentationErrorCode);
+            case ExternalErrorCode externalErrorCode -> throw new IllegalStateException(
+                    "Unmapped external ErrorCode: " + externalErrorCode.getClass().getName()
+                            + "(" + externalErrorCode.code() + ")"
+            );
         };
     }
 

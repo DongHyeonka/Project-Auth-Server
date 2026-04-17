@@ -7,7 +7,10 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
+    properties:
+      hibernate:
+        default_schema: auth
   security:
     oauth2:
       client:
@@ -47,8 +50,8 @@ app:
     version: test
   persistence:
     migration:
-      run-on-startup: true
       location: classpath:db/migration
+      schema: auth
   security:
     jwt:
       issuer: http://localhost:8080

@@ -1,7 +1,7 @@
 package com.project.auth.application.user.signup;
 
+import com.project.auth.application.support.exception.UserErrorCode;
 import com.project.auth.application.user.exception.InvalidUserSignUpException;
-import com.project.auth.application.user.exception.UserErrorCode;
 import com.project.auth.domain.user.exception.InvalidUserEmailException;
 import com.project.auth.domain.user.exception.InvalidUserNameException;
 import com.project.auth.domain.user.exception.InvalidUserPasswordException;

@@ -38,6 +38,8 @@ Read first:
 - `/docs/standards/web/authentication-object-access.md`
 - `/docs/standards/spring/filter-interceptor-resolver-advice.md`
 - `/docs/standards/spring/validation-location.md`
+- `/docs/standards/testing/mock-usage.md`
+- `/docs/standards/testing/springboottest-usage.md`
 
 Examples:
 - `/docs/examples/web/api-controller.md`
@@ -45,3 +47,5 @@ Examples:
 - `/docs/examples/web/response-format.md`
 - `/docs/examples/web/error-code-http-status-separation.md`
 - `/docs/examples/web/authentication-object-access.md`
+- `/docs/examples/testing/mock-usage.md`
+- `/docs/examples/testing/springboottest-usage.md`
