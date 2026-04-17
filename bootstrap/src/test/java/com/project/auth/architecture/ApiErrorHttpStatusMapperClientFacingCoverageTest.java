@@ -1,9 +1,9 @@
 package com.project.auth.architecture;
 
-import com.project.auth.application.auth.exception.AuthErrorCode;
+import com.project.auth.application.support.exception.AuthErrorCode;
 import com.project.auth.application.support.exception.CommonErrorCode;
 import com.project.auth.application.support.exception.ErrorCode;
-import com.project.auth.application.user.exception.UserErrorCode;
+import com.project.auth.application.support.exception.UserErrorCode;
 import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
 import com.project.auth.presentation.support.exception.PresentationErrorCode;
 import org.junit.jupiter.params.ParameterizedTest;

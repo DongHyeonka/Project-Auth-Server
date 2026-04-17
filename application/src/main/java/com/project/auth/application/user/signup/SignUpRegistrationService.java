@@ -43,8 +43,8 @@ public class SignUpRegistrationService {
         if (registerUserPort.existsByEmail(command.email())) {
             authAuditEventPublisher.publish(AuthAuditEvent.warn(
                     AuthAuditEventType.SIGNUP_FAILURE.code(),
-                    "emailMasked", AuthAuditFields.maskedEmail(command.email()),
-                    "reason", AuthAuditFailureReason.DUPLICATE_EMAIL.code()
+                    AuthAuditFields.EMAIL_MASKED, AuthAuditFields.maskedEmail(command.email()),
+                    AuthAuditFields.REASON, AuthAuditFailureReason.DUPLICATE_EMAIL.code()
             ));
             throw new DuplicateUserEmailException();
         }
@@ -60,8 +60,8 @@ public class SignUpRegistrationService {
         User savedUser = registerUserPort.save(user);
         authAuditEventPublisher.publish(AuthAuditEvent.info(
                 AuthAuditEventType.SIGNUP_SUCCESS.code(),
-                "userIdHash", AuthAuditFields.userIdHash(savedUser.getId()),
-                "emailMasked", AuthAuditFields.maskedEmail(command.email())
+                AuthAuditFields.USER_ID_HASH, AuthAuditFields.userIdHash(savedUser.getId()),
+                AuthAuditFields.EMAIL_MASKED, AuthAuditFields.maskedEmail(command.email())
         ));
         return savedUser;
     }

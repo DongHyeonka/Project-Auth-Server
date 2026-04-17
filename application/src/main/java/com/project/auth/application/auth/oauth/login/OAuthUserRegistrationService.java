@@ -52,9 +52,9 @@ public class OAuthUserRegistrationService {
         if (loadOAuthUserPort.existsByEmail(command.email())) {
             authAuditEventPublisher.publish(AuthAuditEvent.warn(
                     AuthAuditEventType.OAUTH_LOGIN_FAILURE.code(),
-                    "emailMasked", AuthAuditFields.maskedEmail(command.email()),
-                    "provider", command.provider(),
-                    "reason", AuthAuditFailureReason.EMAIL_CONFLICT.code()
+                    AuthAuditFields.EMAIL_MASKED, AuthAuditFields.maskedEmail(command.email()),
+                    AuthAuditFields.PROVIDER, command.provider(),
+                    AuthAuditFields.REASON, AuthAuditFailureReason.EMAIL_CONFLICT.code()
             ));
             throw new OAuthAccountConflictException();
         }
@@ -73,9 +73,9 @@ public class OAuthUserRegistrationService {
         } catch (DuplicateUserEmailException exception) {
             authAuditEventPublisher.publish(AuthAuditEvent.warn(
                     AuthAuditEventType.OAUTH_LOGIN_FAILURE.code(),
-                    "emailMasked", AuthAuditFields.maskedEmail(command.email()),
-                    "provider", command.provider(),
-                    "reason", AuthAuditFailureReason.DUPLICATE_EMAIL_RACE_CONDITION.code()
+                    AuthAuditFields.EMAIL_MASKED, AuthAuditFields.maskedEmail(command.email()),
+                    AuthAuditFields.PROVIDER, command.provider(),
+                    AuthAuditFields.REASON, AuthAuditFailureReason.DUPLICATE_EMAIL_RACE_CONDITION.code()
             ));
             throw new OAuthAccountConflictException();
         }

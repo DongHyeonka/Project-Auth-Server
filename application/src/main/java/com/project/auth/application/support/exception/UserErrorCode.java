@@ -1,6 +1,4 @@
-package com.project.auth.application.user.exception;
-
-import com.project.auth.application.support.exception.ErrorCode;
+package com.project.auth.application.support.exception;
 
 public enum UserErrorCode implements ErrorCode {
     USER_EMAIL_INVALID("USER-001", "유효한 이메일 형식이 아닙니다."),

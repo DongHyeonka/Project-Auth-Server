@@ -1,8 +1,8 @@
 package com.project.auth.presentation.support.exception;
 
-import com.project.auth.application.support.exception.ErrorCode;
+import com.project.auth.application.support.exception.ExternalErrorCode;
 
-public enum PresentationErrorCode implements ErrorCode {
+public enum PresentationErrorCode implements ExternalErrorCode {
     INVALID_INPUT("PRES-001", "요청 값이 올바르지 않습니다."),
     INVALID_REQUEST_BODY("PRES-002", "요청 본문을 읽을 수 없습니다."),
     METHOD_NOT_ALLOWED("PRES-003", "지원하지 않는 HTTP 메서드입니다."),

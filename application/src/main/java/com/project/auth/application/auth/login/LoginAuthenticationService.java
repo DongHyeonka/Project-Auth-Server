@@ -42,8 +42,8 @@ public class LoginAuthenticationService {
                 .orElseThrow(() -> {
                     authAuditEventPublisher.publish(AuthAuditEvent.warn(
                             AuthAuditEventType.LOGIN_FAILURE.code(),
-                            "emailMasked", AuthAuditFields.maskedEmail(command.email()),
-                            "reason", AuthAuditFailureReason.USER_NOT_FOUND.code()
+                            AuthAuditFields.EMAIL_MASKED, AuthAuditFields.maskedEmail(command.email()),
+                            AuthAuditFields.REASON, AuthAuditFailureReason.USER_NOT_FOUND.code()
                     ));
                     return new InvalidUserCredentialsException();
                 });
@@ -51,9 +51,9 @@ public class LoginAuthenticationService {
         if (user.getProvider() != AuthProvider.LOCAL) {
             authAuditEventPublisher.publish(AuthAuditEvent.warn(
                     AuthAuditEventType.LOGIN_FAILURE.code(),
-                    "emailMasked", AuthAuditFields.maskedEmail(command.email()),
-                    "reason", AuthAuditFailureReason.NON_LOCAL_PROVIDER.code(),
-                    "provider", user.getProvider()
+                    AuthAuditFields.EMAIL_MASKED, AuthAuditFields.maskedEmail(command.email()),
+                    AuthAuditFields.REASON, AuthAuditFailureReason.NON_LOCAL_PROVIDER.code(),
+                    AuthAuditFields.PROVIDER, user.getProvider()
             ));
             throw new InvalidUserCredentialsException();
         }
@@ -61,8 +61,8 @@ public class LoginAuthenticationService {
         if (!passwordVerifierPort.matches(command.password(), user.getEncodedPassword())) {
             authAuditEventPublisher.publish(AuthAuditEvent.warn(
                     AuthAuditEventType.LOGIN_FAILURE.code(),
-                    "emailMasked", AuthAuditFields.maskedEmail(command.email()),
-                    "reason", AuthAuditFailureReason.INVALID_PASSWORD.code()
+                    AuthAuditFields.EMAIL_MASKED, AuthAuditFields.maskedEmail(command.email()),
+                    AuthAuditFields.REASON, AuthAuditFailureReason.INVALID_PASSWORD.code()
             ));
             throw new InvalidUserCredentialsException();
         }

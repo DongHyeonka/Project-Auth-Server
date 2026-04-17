@@ -44,9 +44,9 @@ public class OAuthLoginService implements OAuthLoginUseCase {
         LoginResult result = LoginResult.from(user, issueOAuthLoginTokenPort.issue(user));
         authAuditEventPublisher.publish(AuthAuditEvent.info(
                 AuthAuditEventType.OAUTH_LOGIN_SUCCESS.code(),
-                "userIdHash", AuthAuditFields.userIdHash(user.getId()),
-                "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email()),
-                "provider", user.getProvider()
+                AuthAuditFields.USER_ID_HASH, AuthAuditFields.userIdHash(user.getId()),
+                AuthAuditFields.EMAIL_MASKED, AuthAuditFields.maskedEmail(validatedCommand.email()),
+                AuthAuditFields.PROVIDER, user.getProvider()
         ));
         return result;
     }

@@ -3,6 +3,7 @@ package com.project.auth.config.logging;
 import com.project.auth.application.support.audit.AuditLevel;
 import com.project.auth.application.support.audit.AuthAuditEvent;
 import com.project.auth.application.support.audit.AuthAuditEventPublisher;
+import com.project.auth.application.support.audit.AuthAuditFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LoggingEventBuilder;
@@ -31,7 +32,7 @@ public class AuthAuditLoggingConfiguration {
         @EventListener
         public void onAuthAuditEvent(AuthAuditEvent event) {
             LoggingEventBuilder builder = event.level() == AuditLevel.WARN ? audit.atWarn() : audit.atInfo();
-            builder.addKeyValue("eventType", event.eventType());
+            builder.addKeyValue(AuthAuditFields.EVENT_TYPE, event.eventType());
             event.fields().forEach((key, value) -> builder.addKeyValue(key, LogSanitizer.normalize(value)));
             builder.log(event.eventType());
         }

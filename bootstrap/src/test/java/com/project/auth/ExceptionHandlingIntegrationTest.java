@@ -1,6 +1,6 @@
 package com.project.auth;
 
-import com.project.auth.application.auth.exception.AuthErrorCode;
+import com.project.auth.application.support.exception.AuthErrorCode;
 import com.project.auth.application.support.exception.CommonErrorCode;
 import com.project.auth.config.web.TraceIdFilter;
 import com.project.auth.domain.user.exception.DomainException;

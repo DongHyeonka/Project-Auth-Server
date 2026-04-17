@@ -43,8 +43,8 @@ public class LoginService implements LoginUseCase {
         LoginResult result = LoginResult.from(user, issueLoginTokenPort.issue(user));
         authAuditEventPublisher.publish(AuthAuditEvent.info(
                 AuthAuditEventType.LOGIN_SUCCESS.code(),
-                "userIdHash", AuthAuditFields.userIdHash(user.getId()),
-                "emailMasked", AuthAuditFields.maskedEmail(validatedCommand.email())
+                AuthAuditFields.USER_ID_HASH, AuthAuditFields.userIdHash(user.getId()),
+                AuthAuditFields.EMAIL_MASKED, AuthAuditFields.maskedEmail(validatedCommand.email())
         ));
         return result;
     }
