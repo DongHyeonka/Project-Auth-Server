@@ -55,6 +55,7 @@ Routing:
 - external call/retry/timeout/fallback -> `/docs/standards/integration/**`
 - logging/trace/health/pii -> `/docs/standards/observability/**`
 - PostgreSQL/query/transaction/concurrency -> `/docs/standards/db/**`
+- test scope/fixture/mock/repository/@SpringBootTest -> `/docs/standards/testing/**`
 - approved examples -> `/docs/examples/**`
 
 Before editing:

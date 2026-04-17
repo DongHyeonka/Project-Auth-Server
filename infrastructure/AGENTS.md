@@ -37,6 +37,23 @@ Read first:
 - `/docs/standards/integration/retry.md`
 - `/docs/standards/integration/serialization-deserialization.md`
 - `/docs/standards/observability/exception-log.md`
+- `/docs/standards/db/schema-structure.md`
+- `/docs/standards/db/column-types.md`
+- `/docs/standards/db/pk-fk-unique-check.md`
+- `/docs/standards/db/audit-columns.md`
+- `/docs/standards/db/index.md`
+- `/docs/standards/db/query.md`
+- `/docs/standards/db/pagination-query.md`
+- `/docs/standards/db/jpa-fetch-strategy.md`
+- `/docs/standards/db/n-plus-one.md`
+- `/docs/standards/db/transaction.md`
+- `/docs/standards/db/isolation.md`
+- `/docs/standards/db/lock.md`
+- `/docs/standards/db/concurrency.md`
+- `/docs/standards/db/soft-delete.md`
+- `/docs/standards/db/migration.md`
+- `/docs/standards/testing/repository-test.md`
+- `/docs/standards/testing/fixture-factory.md`
 
 Examples:
 - `/docs/examples/design/mapper-separation.md`
@@ -44,3 +61,6 @@ Examples:
 - `/docs/examples/integration/timeout.md`
 - `/docs/examples/integration/retry.md`
 - `/docs/examples/integration/serialization-deserialization.md`
+- `/docs/examples/db/**`
+- `/docs/examples/testing/repository-test.md`
+- `/docs/examples/testing/fixture-factory.md`

@@ -37,6 +37,9 @@ Read first:
 - `/docs/standards/observability/trace-principal-path-recording.md`
 - `/docs/standards/observability/log-level.md`
 - `/docs/standards/observability/exception-log.md`
+- `/docs/standards/testing/springboottest-usage.md`
+- `/docs/standards/testing/mock-usage.md`
+- `/docs/standards/db/migration.md`
 
 Examples:
 - `/docs/examples/spring/filter-interceptor-resolver-advice.md`
@@ -44,3 +47,6 @@ Examples:
 - `/docs/examples/spring/dependency-injection.md`
 - `/docs/examples/spring/configuration-properties.md`
 - `/docs/examples/observability/trace-principal-path-recording.md`
+- `/docs/examples/testing/springboottest-usage.md`
+- `/docs/examples/testing/mock-usage.md`
+- `/docs/examples/db/migration.md`

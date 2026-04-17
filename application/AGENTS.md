@@ -37,6 +37,12 @@ Read first:
 - `/docs/standards/spring/application-event.md`
 - `/docs/standards/language/exceptions.md`
 - `/docs/standards/integration/external-api-client-structure.md`
+- `/docs/standards/db/transaction.md`
+- `/docs/standards/db/isolation.md`
+- `/docs/standards/db/concurrency.md`
+- `/docs/standards/testing/mock-usage.md`
+- `/docs/standards/testing/fixture-factory.md`
+- `/docs/standards/testing/springboottest-usage.md`
 
 Examples:
 - `/docs/examples/spring/transaction.md`
@@ -44,3 +50,9 @@ Examples:
 - `/docs/examples/design/port-abstraction.md`
 - `/docs/examples/design/interface-creation.md`
 - `/docs/examples/design/dto-domain-entity-separation.md`
+- `/docs/examples/db/transaction.md`
+- `/docs/examples/db/isolation.md`
+- `/docs/examples/db/concurrency.md`
+- `/docs/examples/testing/mock-usage.md`
+- `/docs/examples/testing/fixture-factory.md`
+- `/docs/examples/testing/springboottest-usage.md`
