@@ -51,9 +51,6 @@ management:
     port: ${MANAGEMENT_SERVER_PORT:9090}
 
 app:
-  persistence:
-    migration:
-      run-on-startup: ${APP_PERSISTENCE_MIGRATION_RUN_ON_STARTUP:false}
   security:
     jwt:
       issuer: ${APP_SECURITY_JWT_ISSUER}

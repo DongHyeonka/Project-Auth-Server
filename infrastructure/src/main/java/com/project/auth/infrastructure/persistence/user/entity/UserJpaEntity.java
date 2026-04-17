@@ -20,24 +20,27 @@ public class UserJpaEntity {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "email", nullable = false, unique = true, length = 320)
+    @Column(name = "email", nullable = false, columnDefinition = "text")
     private String email;
 
-    @Column(name = "encoded_password", length = 255)
+    @Column(name = "encoded_password", columnDefinition = "text")
     private String encodedPassword;
 
-    @Column(name = "name", nullable = false, length = 20)
+    @Column(name = "name", nullable = false, columnDefinition = "text")
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "provider", nullable = false, length = 20)
+    @Column(name = "provider", nullable = false, columnDefinition = "text")
     private AuthProvider provider;
 
-    @Column(name = "provider_subject", length = 255)
+    @Column(name = "provider_subject", columnDefinition = "text")
     private String providerSubject;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false, insertable = false, updatable = false)
+    private Instant updatedAt;
 
     protected UserJpaEntity() {
     }

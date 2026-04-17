@@ -53,7 +53,7 @@ public class JpaUserRepositoryAdapter implements
     public User save(User user) {
         try {
             return userPersistenceMapper.toDomain(
-                    userJpaRepository.save(userPersistenceMapper.toEntity(user))
+                    userJpaRepository.saveAndFlush(userPersistenceMapper.toEntity(user))
             );
         } catch (DataIntegrityViolationException exception) {
             throw new DuplicateUserEmailException();
