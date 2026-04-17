@@ -2,6 +2,8 @@
 
 # JWT를 주는 OAuth2 로그인인데도 왜 세션이 필요할까
 
+> Note: 2026-04-17 이후 현재 구현은 Keycloak Resource Server 구조로 전환되었습니다. 이 글은 전환 전 OAuth2 Login 구조를 설명하는 기록입니다.
+
 > 최종 응답이 JWT라고 해서 로그인 과정 전체가 stateless한 것은 아니었습니다. OAuth2 authorization code flow는 redirect와 callback 사이의 중간 상태를 유지해야 했고, 그 지점을 Spring Security 세션 모델이 맡고 있었습니다.
 
 ## 이 글을 쓰게 된 배경

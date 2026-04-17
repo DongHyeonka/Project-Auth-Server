@@ -14,7 +14,6 @@ public class UserPersistenceMapper {
         return UserJpaEntity.of(
                 user.getId(),
                 user.getEmail(),
-                user.getEncodedPassword(),
                 user.getName(),
                 user.getProvider(),
                 user.getProviderSubject(),
@@ -27,7 +26,6 @@ public class UserPersistenceMapper {
             return User.restore(
                     userJpaEntity.getId(),
                     UserEmail.from(userJpaEntity.getEmail()),
-                    userJpaEntity.getEncodedPassword(),
                     UserName.from(userJpaEntity.getName()),
                     userJpaEntity.getProvider(),
                     userJpaEntity.getProviderSubject(),

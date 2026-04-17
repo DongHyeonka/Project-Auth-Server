@@ -1,9 +1,7 @@
 package com.project.auth.config.persistence;
 
-import com.project.auth.application.auth.login.port.out.LoadLoginUserPort;
-import com.project.auth.application.auth.oauth.login.port.out.LoadOAuthUserPort;
-import com.project.auth.application.auth.oauth.login.port.out.RegisterOAuthUserPort;
-import com.project.auth.application.user.signup.port.out.RegisterUserPort;
+import com.project.auth.application.auth.resource.port.out.LoadKeycloakUserPort;
+import com.project.auth.application.auth.resource.port.out.RegisterKeycloakUserPort;
 import com.project.auth.infrastructure.persistence.user.JpaUserRepositoryAdapter;
 import com.project.auth.infrastructure.persistence.user.mapper.UserPersistenceMapper;
 import com.project.auth.infrastructure.persistence.user.repository.UserJpaRepository;
@@ -27,22 +25,12 @@ public class PersistenceConfiguration {
     }
 
     @Bean
-    public RegisterUserPort registerUserPort(JpaUserRepositoryAdapter jpaUserRepositoryAdapter) {
+    public LoadKeycloakUserPort loadKeycloakUserPort(JpaUserRepositoryAdapter jpaUserRepositoryAdapter) {
         return jpaUserRepositoryAdapter;
     }
 
     @Bean
-    public LoadLoginUserPort loadLoginUserPort(JpaUserRepositoryAdapter jpaUserRepositoryAdapter) {
-        return jpaUserRepositoryAdapter;
-    }
-
-    @Bean
-    public LoadOAuthUserPort loadOAuthUserPort(JpaUserRepositoryAdapter jpaUserRepositoryAdapter) {
-        return jpaUserRepositoryAdapter;
-    }
-
-    @Bean
-    public RegisterOAuthUserPort registerOAuthUserPort(JpaUserRepositoryAdapter jpaUserRepositoryAdapter) {
+    public RegisterKeycloakUserPort registerKeycloakUserPort(JpaUserRepositoryAdapter jpaUserRepositoryAdapter) {
         return jpaUserRepositoryAdapter;
     }
 }

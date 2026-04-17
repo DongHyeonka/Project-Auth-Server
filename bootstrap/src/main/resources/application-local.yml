@@ -12,42 +12,6 @@ spring:
       ddl-auto: validate
   security:
     oauth2:
-      client:
-        provider:
-          keycloak:
-            issuer-uri: ${APP_SECURITY_OAUTH2_KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/project-auth}
-        registration:
-          keycloak-google:
-            provider: keycloak
-            client-id: ${APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_ID:project-auth-server}
-            client-secret: ${APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_SECRET:project-auth-server-secret}
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope:
-              - openid
-              - profile
-              - email
-          keycloak-github:
-            provider: keycloak
-            client-id: ${APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_ID:project-auth-server}
-            client-secret: ${APP_SECURITY_OAUTH2_KEYCLOAK_CLIENT_SECRET:project-auth-server-secret}
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope:
-              - openid
-              - profile
-              - email
-
-app:
-  security:
-    jwt:
-      issuer: ${APP_SECURITY_JWT_ISSUER:http://localhost:8080}
-      active-key-id: ${APP_SECURITY_JWT_ACTIVE_KEY_ID:local-generated-rsa-1}
-      generate-key-pair-on-startup: ${APP_SECURITY_JWT_GENERATE_KEY_PAIR_ON_STARTUP:true}
-      access-token-expiration: ${APP_SECURITY_JWT_ACCESS_TOKEN_EXPIRATION:PT30M}
-      vault:
-        enabled: ${APP_SECURITY_JWT_VAULT_ENABLED:false}
-        address: ${APP_SECURITY_JWT_VAULT_ADDRESS:http://localhost:8200}
-        token: ${APP_SECURITY_JWT_VAULT_TOKEN:project-auth-root-token}
-        mount-path: ${APP_SECURITY_JWT_VAULT_MOUNT_PATH:transit}
-        transit-key-name: ${APP_SECURITY_JWT_VAULT_TRANSIT_KEY_NAME:project-auth-jwt}
+      resourceserver:
+        jwt:
+          issuer-uri: ${APP_SECURITY_KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/project-auth}

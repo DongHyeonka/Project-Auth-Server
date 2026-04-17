@@ -23,9 +23,6 @@ public class UserJpaEntity {
     @Column(name = "email", nullable = false, columnDefinition = "text")
     private String email;
 
-    @Column(name = "encoded_password", columnDefinition = "text")
-    private String encodedPassword;
-
     @Column(name = "name", nullable = false, columnDefinition = "text")
     private String name;
 
@@ -33,7 +30,7 @@ public class UserJpaEntity {
     @Column(name = "provider", nullable = false, columnDefinition = "text")
     private AuthProvider provider;
 
-    @Column(name = "provider_subject", columnDefinition = "text")
+    @Column(name = "provider_subject", nullable = false, columnDefinition = "text")
     private String providerSubject;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -48,7 +45,6 @@ public class UserJpaEntity {
     private UserJpaEntity(
             UUID id,
             String email,
-            String encodedPassword,
             String name,
             AuthProvider provider,
             String providerSubject,
@@ -56,23 +52,21 @@ public class UserJpaEntity {
     ) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.email = Objects.requireNonNull(email, "email must not be null");
-        this.encodedPassword = encodedPassword;
         this.name = Objects.requireNonNull(name, "name must not be null");
         this.provider = Objects.requireNonNull(provider, "provider must not be null");
-        this.providerSubject = providerSubject;
+        this.providerSubject = Objects.requireNonNull(providerSubject, "providerSubject must not be null");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
     }
 
     public static UserJpaEntity of(
             UUID id,
             String email,
-            String encodedPassword,
             String name,
             AuthProvider provider,
             String providerSubject,
             Instant createdAt
     ) {
-        return new UserJpaEntity(id, email, encodedPassword, name, provider, providerSubject, createdAt);
+        return new UserJpaEntity(id, email, name, provider, providerSubject, createdAt);
     }
 
     public UUID getId() {
@@ -81,10 +75,6 @@ public class UserJpaEntity {
 
     public String getEmail() {
         return email;
-    }
-
-    public String getEncodedPassword() {
-        return encodedPassword;
     }
 
     public String getName() {

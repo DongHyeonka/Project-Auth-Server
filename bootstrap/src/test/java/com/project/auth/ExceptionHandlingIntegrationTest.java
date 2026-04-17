@@ -20,9 +20,13 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.WebApplicationContext;
+
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.blankOrNullString;
@@ -88,7 +92,8 @@ class ExceptionHandlingIntegrationTest {
 
     @Test
     void malformed_json_returns_400_json() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/test-support/body")
+                        .with(user("user@example.com").roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{invalid"))
                 .andExpect(status().isBadRequest())
@@ -103,7 +108,7 @@ class ExceptionHandlingIntegrationTest {
 
     @Test
     void unsupported_method_returns_405_json() throws Exception {
-        mockMvc.perform(get("/api/v1/auth/login"))
+        mockMvc.perform(post("/test-support/protected").with(user("user@example.com").roles("USER")))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(header().exists("X-Trace-Id"))
@@ -116,11 +121,11 @@ class ExceptionHandlingIntegrationTest {
 
     @Test
     void client_supplied_trace_id_is_ignored_and_server_generated_value_is_returned() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/test-support/body")
+                        .with(user("user@example.com").roles("USER"))
                         .header("X-Trace-Id", "client-provided-trace")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{invalid"))
-                .andExpect(status().isBadRequest())
                 .andExpect(header().exists("X-Trace-Id"))
                 .andExpect(header().string("X-Trace-Id", not("client-provided-trace")))
                 .andExpect(jsonPath("$.traceId", not("client-provided-trace")));
@@ -152,7 +157,7 @@ class ExceptionHandlingIntegrationTest {
 
         assertThat(output).contains("traceId=");
         assertThat(output).contains("Infrastructure failure. errorCode=");
-        assertThat(output).contains(InfrastructureErrorCode.VAULT_TRANSIT_FAILED.code());
+        assertThat(output).contains(InfrastructureErrorCode.EXTERNAL_SERVICE_ERROR.code());
         assertThat(output).contains("method=GET requestPath=/test-support/infrastructure");
     }
 
@@ -186,6 +191,11 @@ class ExceptionHandlingIntegrationTest {
             return "ok";
         }
 
+        @PostMapping("/test-support/body")
+        String bodyEndpoint(@RequestBody Map<String, Object> payload) {
+            return payload.toString();
+        }
+
         @GetMapping("/test-support/admin")
         String adminOnly() {
             throw new org.springframework.security.authorization.AuthorizationDeniedException("Access Denied");
@@ -194,8 +204,8 @@ class ExceptionHandlingIntegrationTest {
         @GetMapping("/test-support/infrastructure")
         String infrastructureFailure() {
             throw new InfrastructureException(
-                    InfrastructureErrorCode.VAULT_TRANSIT_FAILED,
-                    "Simulated Vault outage for integration test."
+                    InfrastructureErrorCode.EXTERNAL_SERVICE_ERROR,
+                    "Simulated external outage for integration test."
             );
         }
 

@@ -34,5 +34,6 @@
 
 | 문서 | 내용 |
 |------|------|
+| [keycloak-resource-server-transition.md](./keycloak-resource-server-transition.md) | Keycloak으로 인증 책임을 옮기고 auth-server를 Resource Server로 줄인 전환 기록 |
 | [spring-security-why-oauth2-login-still-needs-session.md](./spring-security-why-oauth2-login-still-needs-session.md) | JWT 기반 로그인 결과와 OAuth2 세션 유지가 왜 동시에 필요한지 설명하는 글 초안 |
 | [spring-security-keycloak-kc-idp-hint.md](./spring-security-keycloak-kc-idp-hint.md) | Keycloak broker 구조에서 `kc_idp_hint`가 어떤 역할을 하는지 설명하는 글 초안 |

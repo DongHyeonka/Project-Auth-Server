@@ -1,5 +1,8 @@
 # Spring Security 문서
 
+> 2026-04-17 기준 현재 구현은 Keycloak Resource Server 구조로 전환되었습니다.  
+> 이 폴더의 OAuth2 Login, 자체 JWT 발급, Vault Transit 서명 문서는 전환 전 설계 기록으로만 봅니다. 현재 기준 문서는 [docs/topics/03-keycloak](../03-keycloak/README.md)입니다.
+
 ## 개요
 
 이 폴더는 `Project-Auth-Server`에 실제로 적용된 Spring Security와 주변 보안 구성을 코드 기준으로 정리한 문서 모음입니다.  

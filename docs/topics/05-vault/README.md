@@ -1,5 +1,8 @@
 # Vault
 
+> 2026-04-17 기준 auth-server가 자체 JWT를 발급하지 않도록 전환되면서 Vault Transit signer 구현은 제거되었습니다.  
+> 이 문서는 전환 전 실험/설계 기록이며 현재 인증 기준은 [docs/topics/03-keycloak](../03-keycloak/README.md)을 따릅니다.
+
 ## 개요
 
 이 주제는 현재 프로젝트가 Vault Transit을 이용해 JWT 서명을 외부화하는 이유와, 로컬 개발 환경에서 Vault를 어떻게 다루는지 정리합니다.

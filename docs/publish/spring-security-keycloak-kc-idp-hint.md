@@ -2,6 +2,8 @@
 
 # Keycloak broker에서 `kc_idp_hint`를 왜 붙여야 할까
 
+> Note: 2026-04-17 이후 현재 auth-server는 OAuth2 Login 시작 endpoint를 제공하지 않고 Resource Server로 동작합니다. 이 글은 전환 전 broker 진입 구조를 설명하는 기록입니다.
+
 > Google과 GitHub 로그인 버튼은 둘 다 같은 Keycloak client로 시작했지만, 실제로 어느 provider로 보낼지는 `kc_idp_hint`가 결정하고 있었습니다. 이 값을 이해하지 못하면 broker 구조가 한 번에 읽히지 않습니다.
 
 ## 이 글을 쓰게 된 배경

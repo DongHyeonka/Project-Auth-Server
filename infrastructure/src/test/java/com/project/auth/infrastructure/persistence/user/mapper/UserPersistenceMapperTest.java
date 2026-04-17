@@ -19,12 +19,11 @@ class UserPersistenceMapperTest {
     void toDomain_translates_invalid_persisted_user_state_to_infrastructure_exception() {
         UserJpaEntity invalidEntity = UserJpaEntity.of(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
-                "tester@example.com",
-                null,
+                "not-an-email",
                 "테스터",
-                AuthProvider.LOCAL,
-                null,
-                Instant.parse("2026-03-14T00:00:00Z")
+                AuthProvider.KEYCLOAK,
+                "keycloak-subject-1",
+                Instant.parse("2026-04-17T00:00:00Z")
         );
 
         assertThatThrownBy(() -> mapper.toDomain(invalidEntity))

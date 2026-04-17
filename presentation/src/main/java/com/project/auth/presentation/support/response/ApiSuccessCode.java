@@ -1,8 +1,7 @@
 package com.project.auth.presentation.support.response;
 
 public enum ApiSuccessCode {
-    USER_SIGNED_UP("USER_SIGNED_UP", "회원가입이 완료되었습니다."),
-    AUTH_LOGIN_SUCCEEDED("AUTH_LOGIN_SUCCEEDED", "로그인이 완료되었습니다.");
+    AUTHENTICATED_USER_LOADED("AUTHENTICATED_USER_LOADED", "현재 사용자 조회가 완료되었습니다.");
 
     private final String code;
     private final String message;
