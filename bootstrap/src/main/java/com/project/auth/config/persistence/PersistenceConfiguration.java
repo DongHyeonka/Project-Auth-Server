@@ -1,7 +1,7 @@
 package com.project.auth.config.persistence;
 
-import com.project.auth.application.auth.resource.port.out.LoadKeycloakUserPort;
-import com.project.auth.application.auth.resource.port.out.RegisterKeycloakUserPort;
+import com.project.auth.application.auth.identity.port.out.LoadKeycloakUserPort;
+import com.project.auth.application.auth.identity.port.out.RegisterKeycloakUserPort;
 import com.project.auth.infrastructure.persistence.user.JpaUserRepositoryAdapter;
 import com.project.auth.infrastructure.persistence.user.mapper.UserPersistenceMapper;
 import com.project.auth.infrastructure.persistence.user.repository.UserJpaRepository;

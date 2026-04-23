@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,6 +22,8 @@ import java.util.Collection;
 
 @Configuration
 public class ResourceServerSecurityConfiguration {
+
+    private static final String REALM_ROLE_USER = "user";
 
     @Bean
     public SecurityActorIdResolver securityActorIdResolver() {
@@ -79,6 +82,7 @@ public class ResourceServerSecurityConfiguration {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/me").hasRole(REALM_ROLE_USER)
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

@@ -89,55 +89,7 @@
               "pm.test('인증 필요 에러 코드 확인', function () {",
               "    var json = pm.response.json();",
               "    pm.expect(json.success).to.eql(false);",
-              "    pm.expect(json.code).to.eql('AUTH-006');",
-              "});"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "회원가입 요청값 검증 실패",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"invalid-email\",\n  \"password\": \"1234\",\n  \"name\": \"ㄱ\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/users/signup",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "users",
-            "signup"
-          ]
-        },
-        "description": "기존 회원가입 HTTP 계약의 Bean Validation 기반 400 응답을 확인합니다."
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('400 Bad Request 반환', function () {",
-              "    pm.response.to.have.status(400);",
-              "});",
-              "",
-              "pm.test('공통 입력값 에러 코드 확인', function () {",
-              "    var json = pm.response.json();",
-              "    pm.expect(json.success).to.eql(false);",
-              "    pm.expect(json.code).to.eql('COMMON-001');",
+              "    pm.expect(json.code).to.eql('AUTH-001');",
               "});"
             ]
           }

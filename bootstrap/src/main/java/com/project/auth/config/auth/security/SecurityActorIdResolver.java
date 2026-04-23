@@ -1,6 +1,6 @@
 package com.project.auth.config.auth.security;
 
-import com.project.auth.config.logging.LogSanitizer;
+import com.project.auth.application.support.logging.LogSanitizer;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;

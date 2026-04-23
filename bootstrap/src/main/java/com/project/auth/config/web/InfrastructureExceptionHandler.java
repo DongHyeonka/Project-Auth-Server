@@ -1,7 +1,7 @@
 package com.project.auth.config.web;
 
 import com.project.auth.application.support.exception.CommonErrorCode;
-import com.project.auth.config.logging.LogSanitizer;
+import com.project.auth.application.support.logging.LogSanitizer;
 import com.project.auth.infrastructure.support.exception.InfrastructureException;
 import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
 import com.project.auth.presentation.support.response.ApiResult;

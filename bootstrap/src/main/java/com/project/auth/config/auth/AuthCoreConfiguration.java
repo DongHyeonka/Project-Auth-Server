@@ -1,9 +1,9 @@
 package com.project.auth.config.auth;
 
-import com.project.auth.application.auth.resource.SyncKeycloakUserUseCase;
-import com.project.auth.application.auth.resource.internal.KeycloakUserSynchronizer;
-import com.project.auth.application.auth.resource.port.out.LoadKeycloakUserPort;
-import com.project.auth.application.auth.resource.port.out.RegisterKeycloakUserPort;
+import com.project.auth.application.auth.identity.SyncKeycloakUserUseCase;
+import com.project.auth.application.auth.identity.internal.KeycloakUserSynchronizer;
+import com.project.auth.application.auth.identity.port.out.LoadKeycloakUserPort;
+import com.project.auth.application.auth.identity.port.out.RegisterKeycloakUserPort;
 import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

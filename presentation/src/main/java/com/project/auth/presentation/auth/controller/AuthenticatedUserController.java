@@ -1,8 +1,8 @@
 package com.project.auth.presentation.auth.controller;
 
-import com.project.auth.application.auth.resource.KeycloakUserClaims;
-import com.project.auth.application.auth.resource.SyncedKeycloakUser;
-import com.project.auth.application.auth.resource.SyncKeycloakUserUseCase;
+import com.project.auth.application.auth.identity.KeycloakUserClaims;
+import com.project.auth.application.auth.identity.SyncedKeycloakUser;
+import com.project.auth.application.auth.identity.SyncKeycloakUserUseCase;
 import com.project.auth.presentation.auth.current.AuthenticatedUser;
 import com.project.auth.presentation.auth.current.CurrentUser;
 import com.project.auth.presentation.auth.docs.AuthenticatedUserApiDocs;

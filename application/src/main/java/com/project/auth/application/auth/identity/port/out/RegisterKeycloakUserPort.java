@@ -1,4 +1,4 @@
-package com.project.auth.application.auth.resource.port.out;
+package com.project.auth.application.auth.identity.port.out;
 
 import com.project.auth.domain.user.model.User;
 

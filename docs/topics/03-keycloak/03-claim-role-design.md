@@ -32,6 +32,7 @@ controller는 `@CurrentUser`로 이 principal을 받고, application에는 `Keyc
 | `admin` | `ROLE_admin` | 운영/관리 API |
 
 역할 이름은 Keycloak realm에서 소유합니다. auth-server는 role 값을 새로 발급하거나 DB 값으로 권한을 덮어쓰지 않습니다.
+현재 `/api/v1/auth/me`는 `GET` 요청에 대해 `ROLE_user`가 필요합니다. 따라서 Keycloak realm의 self-service registration 기본 역할에는 `user`를 포함해야 하며, 역할이 없는 token은 인증은 성공하더라도 `AUTH-002`로 거절됩니다.
 
 ## Result / Trade-offs
 

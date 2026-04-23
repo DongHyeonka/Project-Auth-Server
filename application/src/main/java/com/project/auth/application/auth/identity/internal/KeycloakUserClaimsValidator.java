@@ -1,7 +1,7 @@
-package com.project.auth.application.auth.resource.internal;
+package com.project.auth.application.auth.identity.internal;
 
 import com.project.auth.application.auth.exception.InvalidKeycloakClaimsException;
-import com.project.auth.application.auth.resource.KeycloakUserClaims;
+import com.project.auth.application.auth.identity.KeycloakUserClaims;
 import com.project.auth.domain.user.exception.DomainException;
 import com.project.auth.domain.user.model.UserEmail;
 import com.project.auth.domain.user.model.UserName;

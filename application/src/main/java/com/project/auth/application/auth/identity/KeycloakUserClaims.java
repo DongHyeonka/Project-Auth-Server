@@ -1,4 +1,4 @@
-package com.project.auth.application.auth.resource;
+package com.project.auth.application.auth.identity;
 
 public record KeycloakUserClaims(
         String subject,

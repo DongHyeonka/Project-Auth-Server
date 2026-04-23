@@ -158,6 +158,15 @@ class AuthenticatedUserResourceServerIntegrationTest {
                 .andExpect(jsonPath("$.code").value("AUTH-001"));
     }
 
+    @Test
+    void me_returns_403_when_token_has_no_user_realm_role() throws Exception {
+        AbstractAuthenticationToken authentication = authenticationFor(SUBJECT, EMAIL, NAME, List.of("viewer"));
+
+        mockMvc.perform(get("/api/v1/auth/me").with(authentication(authentication)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("AUTH-002"));
+    }
+
     private static AbstractAuthenticationToken authenticationFor(
             String subject,
             String email,

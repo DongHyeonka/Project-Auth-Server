@@ -1,5 +1,6 @@
 package com.project.auth.presentation.support.exception;
 
+import com.project.auth.application.support.logging.LogSanitizer;
 import com.project.auth.presentation.support.response.ApiResult;
 import com.project.auth.presentation.support.response.ApiResultFactory;
 import org.slf4j.Logger;
@@ -49,7 +50,7 @@ public class RequestExceptionHandler {
             HttpRequestMethodNotSupportedException exception
     ) {
         log.warn("Method not supported. method={} errorCode={}",
-                LogValueSanitizer.normalize(exception.getMethod()), PresentationErrorCode.METHOD_NOT_ALLOWED.code());
+                LogSanitizer.normalize(exception.getMethod()), PresentationErrorCode.METHOD_NOT_ALLOWED.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.METHOD_NOT_ALLOWED))
                 .body(apiResultFactory.failure(
@@ -63,7 +64,7 @@ public class RequestExceptionHandler {
             MissingServletRequestParameterException exception
     ) {
         log.warn("Missing request parameter. parameter={} errorCode={}",
-                LogValueSanitizer.normalize(exception.getParameterName()), PresentationErrorCode.MISSING_PARAMETER.code());
+                LogSanitizer.normalize(exception.getParameterName()), PresentationErrorCode.MISSING_PARAMETER.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.MISSING_PARAMETER))
                 .body(apiResultFactory.failure(
@@ -77,7 +78,7 @@ public class RequestExceptionHandler {
             TypeMismatchException exception
     ) {
         log.warn("Type mismatch for parameter. parameter={} errorCode={}",
-                LogValueSanitizer.normalize(exception.getPropertyName()), PresentationErrorCode.INVALID_INPUT.code());
+                LogSanitizer.normalize(exception.getPropertyName()), PresentationErrorCode.INVALID_INPUT.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.INVALID_INPUT))
                 .body(apiResultFactory.failure(
@@ -91,7 +92,7 @@ public class RequestExceptionHandler {
             HttpMediaTypeNotSupportedException exception
     ) {
         log.warn("Unsupported media type. contentType={} errorCode={}",
-                LogValueSanitizer.normalize(String.valueOf(exception.getContentType())),
+                LogSanitizer.normalize(String.valueOf(exception.getContentType())),
                 PresentationErrorCode.UNSUPPORTED_MEDIA_TYPE.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.UNSUPPORTED_MEDIA_TYPE))
@@ -119,7 +120,7 @@ public class RequestExceptionHandler {
             MissingRequestHeaderException exception
     ) {
         log.warn("Missing request header. header={} errorCode={}",
-                LogValueSanitizer.normalize(exception.getHeaderName()), PresentationErrorCode.MISSING_HEADER.code());
+                LogSanitizer.normalize(exception.getHeaderName()), PresentationErrorCode.MISSING_HEADER.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.MISSING_HEADER))
                 .body(apiResultFactory.failure(
@@ -146,7 +147,7 @@ public class RequestExceptionHandler {
             NoResourceFoundException exception
     ) {
         log.warn("No resource found. resourcePath={} errorCode={}",
-                LogValueSanitizer.normalize(exception.getResourcePath()), PresentationErrorCode.RESOURCE_NOT_FOUND.code());
+                LogSanitizer.normalize(exception.getResourcePath()), PresentationErrorCode.RESOURCE_NOT_FOUND.code());
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.RESOURCE_NOT_FOUND))
                 .body(apiResultFactory.failure(

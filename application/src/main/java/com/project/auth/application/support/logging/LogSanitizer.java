@@ -1,4 +1,4 @@
-package com.project.auth.config.logging;
+package com.project.auth.application.support.logging;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

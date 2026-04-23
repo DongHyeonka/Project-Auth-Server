@@ -1,4 +1,4 @@
-package com.project.auth.application.auth.resource;
+package com.project.auth.application.auth.identity;
 
 import com.project.auth.domain.user.model.User;
 

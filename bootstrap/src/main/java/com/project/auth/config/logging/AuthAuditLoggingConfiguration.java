@@ -4,6 +4,7 @@ import com.project.auth.application.support.audit.AuditLevel;
 import com.project.auth.application.support.audit.AuthAuditEvent;
 import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import com.project.auth.application.support.audit.AuthAuditFields;
+import com.project.auth.application.support.logging.LogSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LoggingEventBuilder;

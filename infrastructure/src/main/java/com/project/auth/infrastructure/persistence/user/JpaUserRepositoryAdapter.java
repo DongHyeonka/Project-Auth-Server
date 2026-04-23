@@ -1,8 +1,8 @@
 package com.project.auth.infrastructure.persistence.user;
 
 import com.project.auth.application.auth.exception.KeycloakAccountConflictException;
-import com.project.auth.application.auth.resource.port.out.LoadKeycloakUserPort;
-import com.project.auth.application.auth.resource.port.out.RegisterKeycloakUserPort;
+import com.project.auth.application.auth.identity.port.out.LoadKeycloakUserPort;
+import com.project.auth.application.auth.identity.port.out.RegisterKeycloakUserPort;
 import com.project.auth.domain.user.model.AuthProvider;
 import com.project.auth.domain.user.model.User;
 import com.project.auth.infrastructure.persistence.user.mapper.UserPersistenceMapper;

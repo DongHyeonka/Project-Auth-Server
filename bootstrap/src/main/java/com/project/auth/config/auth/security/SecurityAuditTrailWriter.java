@@ -2,7 +2,7 @@ package com.project.auth.config.auth.security;
 
 import com.project.auth.application.support.audit.AuthAuditEventType;
 import com.project.auth.application.support.audit.AuthAuditFields;
-import com.project.auth.config.logging.LogSanitizer;
+import com.project.auth.application.support.logging.LogSanitizer;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

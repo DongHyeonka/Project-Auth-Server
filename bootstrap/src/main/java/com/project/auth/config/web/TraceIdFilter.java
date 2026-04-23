@@ -1,6 +1,6 @@
 package com.project.auth.config.web;
 
-import com.project.auth.config.logging.LogSanitizer;
+import com.project.auth.application.support.logging.LogSanitizer;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

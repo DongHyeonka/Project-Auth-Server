@@ -1,11 +1,11 @@
-package com.project.auth.application.auth.resource.internal;
+package com.project.auth.application.auth.identity.internal;
 
 import com.project.auth.application.auth.exception.KeycloakAccountConflictException;
-import com.project.auth.application.auth.resource.KeycloakUserClaims;
-import com.project.auth.application.auth.resource.SyncKeycloakUserUseCase;
-import com.project.auth.application.auth.resource.SyncedKeycloakUser;
-import com.project.auth.application.auth.resource.port.out.LoadKeycloakUserPort;
-import com.project.auth.application.auth.resource.port.out.RegisterKeycloakUserPort;
+import com.project.auth.application.auth.identity.KeycloakUserClaims;
+import com.project.auth.application.auth.identity.SyncKeycloakUserUseCase;
+import com.project.auth.application.auth.identity.SyncedKeycloakUser;
+import com.project.auth.application.auth.identity.port.out.LoadKeycloakUserPort;
+import com.project.auth.application.auth.identity.port.out.RegisterKeycloakUserPort;
 import com.project.auth.application.support.audit.AuthAuditEvent;
 import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import com.project.auth.application.support.audit.AuthAuditEventType;

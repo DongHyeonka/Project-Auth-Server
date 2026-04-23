@@ -3,6 +3,7 @@ package com.project.auth.presentation.support.exception;
 import com.project.auth.application.support.exception.AuthErrorCode;
 import com.project.auth.application.support.exception.BusinessException;
 import com.project.auth.application.support.exception.CommonErrorCode;
+import com.project.auth.application.support.logging.LogSanitizer;
 import com.project.auth.presentation.support.response.ApiResult;
 import com.project.auth.presentation.support.response.ApiResultFactory;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,7 +38,7 @@ public class ApplicationExceptionHandler {
         log.warn(
                 "Authentication required. method={} requestPath={}",
                 request.getMethod(),
-                LogValueSanitizer.normalize(request.getRequestURI())
+                LogSanitizer.normalize(request.getRequestURI())
         );
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(AuthErrorCode.AUTHENTICATION_REQUIRED))
@@ -55,7 +56,7 @@ public class ApplicationExceptionHandler {
         log.warn(
                 "Access denied. method={} requestPath={}",
                 request.getMethod(),
-                LogValueSanitizer.normalize(request.getRequestURI())
+                LogSanitizer.normalize(request.getRequestURI())
         );
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(AuthErrorCode.ACCESS_DENIED))
@@ -74,7 +75,7 @@ public class ApplicationExceptionHandler {
                 "Business exception. errorCode={} method={} requestPath={}",
                 exception.getErrorCode().code(),
                 request.getMethod(),
-                LogValueSanitizer.normalize(request.getRequestURI())
+                LogSanitizer.normalize(request.getRequestURI())
         );
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(exception.getErrorCode()))
@@ -89,7 +90,7 @@ public class ApplicationExceptionHandler {
         log.error(
                 "Response body not writable. method={} requestPath={}",
                 request.getMethod(),
-                LogValueSanitizer.normalize(request.getRequestURI()),
+                LogSanitizer.normalize(request.getRequestURI()),
                 exception
         );
 
@@ -108,7 +109,7 @@ public class ApplicationExceptionHandler {
         log.error(
                 "Unhandled exception. method={} requestPath={}",
                 request.getMethod(),
-                LogValueSanitizer.normalize(request.getRequestURI()),
+                LogSanitizer.normalize(request.getRequestURI()),
                 exception
         );
 

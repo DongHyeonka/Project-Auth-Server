@@ -1,6 +1,6 @@
 package com.project.auth.presentation.auth.mapper;
 
-import com.project.auth.application.auth.resource.SyncedKeycloakUser;
+import com.project.auth.application.auth.identity.SyncedKeycloakUser;
 import com.project.auth.presentation.auth.dto.AuthenticatedUserResponse;
 import org.junit.jupiter.api.Test;
 
