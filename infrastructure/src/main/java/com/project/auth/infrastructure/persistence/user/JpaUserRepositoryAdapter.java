@@ -3,6 +3,7 @@ package com.project.auth.infrastructure.persistence.user;
 import com.project.auth.application.auth.identity.port.out.LoadKeycloakUserPort;
 import com.project.auth.domain.user.model.AuthProvider;
 import com.project.auth.domain.user.model.User;
+import com.project.auth.infrastructure.persistence.user.entity.UserJpaEntity;
 import com.project.auth.infrastructure.persistence.user.mapper.UserPersistenceMapper;
 import com.project.auth.infrastructure.persistence.user.repository.UserJpaRepository;
 
@@ -29,5 +30,12 @@ public class JpaUserRepositoryAdapter implements LoadKeycloakUserPort {
     ) {
         return userJpaRepository.findByProviderAndProviderSubject(provider, providerSubject)
                 .map(userPersistenceMapper::toDomain);
+    }
+
+    public User save(User user) {
+        User nonNullUser = Objects.requireNonNull(user, "user must not be null");
+
+        UserJpaEntity savedUser = userJpaRepository.save(userPersistenceMapper.toEntity(nonNullUser));
+        return userPersistenceMapper.toDomain(savedUser);
     }
 }
