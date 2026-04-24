@@ -86,7 +86,6 @@ class ExceptionHandlingIntegrationTest {
                 .andExpect(jsonPath("$.timestamp", not(blankOrNullString())));
 
         assertThat(output).contains("traceId=");
-        assertThat(output).contains("Access denied. method=GET requestPath=/test-support/admin");
         assertThat(output).doesNotContain("principal=alice@example.com");
     }
 

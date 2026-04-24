@@ -1,6 +1,6 @@
 package com.project.auth.presentation.auth.mapper;
 
-import com.project.auth.application.auth.identity.SyncedKeycloakUser;
+import com.project.auth.application.auth.identity.LoadedKeycloakUser;
 import com.project.auth.presentation.auth.dto.AuthenticatedUserResponse;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +16,7 @@ class AuthenticatedUserPresentationMapperTest {
 
     @Test
     void toResponseMergesSynchronizedUserWithTokenAuthorities() {
-        SyncedKeycloakUser synced = new SyncedKeycloakUser(
+        LoadedKeycloakUser synced = new LoadedKeycloakUser(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
                 "tester@example.com",
                 "테스터",
@@ -39,7 +39,7 @@ class AuthenticatedUserPresentationMapperTest {
 
     @Test
     void toResponseProducesEmptyAuthoritiesWhenNullGiven() {
-        SyncedKeycloakUser synced = new SyncedKeycloakUser(
+        LoadedKeycloakUser synced = new LoadedKeycloakUser(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
                 "tester@example.com",
                 "테스터",

@@ -1,8 +1,8 @@
 package com.project.auth.presentation.auth.controller;
 
 import com.project.auth.application.auth.identity.KeycloakUserClaims;
-import com.project.auth.application.auth.identity.SyncedKeycloakUser;
-import com.project.auth.application.auth.identity.SyncKeycloakUserUseCase;
+import com.project.auth.application.auth.identity.LoadedKeycloakUser;
+import com.project.auth.application.auth.identity.LoadKeycloakUserUseCase;
 import com.project.auth.presentation.auth.current.AuthenticatedUser;
 import com.project.auth.presentation.auth.current.CurrentUser;
 import com.project.auth.presentation.auth.docs.AuthenticatedUserApiDocs;
@@ -23,16 +23,16 @@ public class AuthenticatedUserController implements AuthenticatedUserApiDocs {
 
     private static final ApiSuccessCode USER_LOADED = ApiSuccessCode.AUTHENTICATED_USER_LOADED;
 
-    private final SyncKeycloakUserUseCase syncKeycloakUserUseCase;
+    private final LoadKeycloakUserUseCase loadKeycloakUserUseCase;
     private final AuthenticatedUserPresentationMapper authenticatedUserPresentationMapper;
     private final ApiResultFactory apiResultFactory;
 
     public AuthenticatedUserController(
-            SyncKeycloakUserUseCase syncKeycloakUserUseCase,
+            LoadKeycloakUserUseCase loadKeycloakUserUseCase,
             AuthenticatedUserPresentationMapper authenticatedUserPresentationMapper,
             ApiResultFactory apiResultFactory
     ) {
-        this.syncKeycloakUserUseCase = syncKeycloakUserUseCase;
+        this.loadKeycloakUserUseCase = loadKeycloakUserUseCase;
         this.authenticatedUserPresentationMapper = authenticatedUserPresentationMapper;
         this.apiResultFactory = apiResultFactory;
     }
@@ -40,7 +40,7 @@ public class AuthenticatedUserController implements AuthenticatedUserApiDocs {
     @Override
     @GetMapping("/me")
     public ApiResult<AuthenticatedUserResponse> me(@CurrentUser AuthenticatedUser currentUser) {
-        SyncedKeycloakUser user = syncKeycloakUserUseCase.sync(new KeycloakUserClaims(
+        LoadedKeycloakUser user = loadKeycloakUserUseCase.load(new KeycloakUserClaims(
                 currentUser.subject(),
                 currentUser.email(),
                 currentUser.name()

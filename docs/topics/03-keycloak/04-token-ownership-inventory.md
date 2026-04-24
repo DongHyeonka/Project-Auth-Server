@@ -24,7 +24,7 @@ Keycloak으로 인증 주체를 이전하면 auth-server 내부의 token 발급,
 | `VaultTransitClient` / `VaultTransitJwtSigner` | Vault Transit 서명 API 호출 | 제거 |
 | `ConfiguredOpenIdDiscoveryDocumentProvider` / `OpenIdDiscoveryController` | 자체 issuer/JWKS 공개 | 제거 |
 | `auth-login.html` | auth-server 로그인 페이지 | 제거 |
-| `AuthAuditEventType.LOGIN_*`/`OAUTH_LOGIN_*`/`TOKEN_ISSUED`/`SIGNUP_*` | 로컬 인증·발급 감사 이벤트 | `KEYCLOAK_USER_SYNC_SUCCESS`/`KEYCLOAK_USER_SYNC_CONFLICT`로 교체 |
+| `AuthAuditEventType.LOGIN_*`/`OAUTH_LOGIN_*`/`TOKEN_ISSUED`/`SIGNUP_*` | 로컬 인증·발급 감사 이벤트 | `KEYCLOAK_USER_NOT_FOUND`로 축소 |
 | `AuthErrorCode.INVALID_CREDENTIALS`/`OAUTH_*` | 로컬 로그인 에러 코드 | `KEYCLOAK_CLAIMS_INVALID`/`KEYCLOAK_ACCOUNT_CONFLICT`로 교체 |
 | `UserErrorCode.*` / `ApiSuccessCode.USER_SIGNED_UP` | 로컬 회원가입 에러/성공 코드 | 제거 |
 
@@ -34,8 +34,8 @@ Keycloak으로 인증 주체를 이전하면 auth-server 내부의 token 발급,
 |------------|------|
 | `ResourceServerSecurityConfiguration` | Keycloak issuer 기반 Bearer token 검증 |
 | `KeycloakJwtAuthenticationConverter` | claim/role -> project principal 매핑 |
-| `AuthenticatedUserController` | 현재 사용자 조회와 내부 사용자 동기화 진입점 |
-| `KeycloakUserSynchronizer` | `(KEYCLOAK, sub)` 기준 내부 사용자 식별/생성 |
+| `AuthenticatedUserController` | 현재 사용자 조회 진입점 |
+| `KeycloakUserLoader` | `(KEYCLOAK, sub)` 기준 내부 사용자 식별 |
 | `KeycloakUserClaimsValidator` | 검증된 JWT에서 올라온 claim의 내부 도메인 적합성 확인 |
 
 스키마 변화:
@@ -46,5 +46,5 @@ Keycloak으로 인증 주체를 이전하면 auth-server 내부의 token 발급,
 ## Result
 
 auth-server는 더 이상 token을 만들거나 공개키를 배포하거나 password를 저장하지 않습니다.
-회원가입/로그인/소셜 연동은 Keycloak realm에서 모두 처리되며, auth-server는 Keycloak이 발급한 token이 처음 들어올 때 내부 DB에 사용자 행을 lazy하게 만드는 역할만 남깁니다.
+회원가입/로그인/소셜 연동은 Keycloak realm에서 모두 처리되며, auth-server는 이미 연결된 내부 DB 사용자 행을 조회하는 역할만 남깁니다.
 운영자는 Keycloak realm의 issuer URI와 JWKS를 source of truth로 봐야 하며, auth-server는 DB 사용자 행과 비즈니스 권한 정책만 다룹니다.

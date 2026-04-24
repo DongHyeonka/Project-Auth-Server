@@ -1,7 +1,6 @@
 package com.project.auth.config.persistence;
 
 import com.project.auth.application.auth.identity.port.out.LoadKeycloakUserPort;
-import com.project.auth.application.auth.identity.port.out.RegisterKeycloakUserPort;
 import com.project.auth.infrastructure.persistence.user.JpaUserRepositoryAdapter;
 import com.project.auth.infrastructure.persistence.user.mapper.UserPersistenceMapper;
 import com.project.auth.infrastructure.persistence.user.repository.UserJpaRepository;
@@ -26,11 +25,6 @@ public class PersistenceConfiguration {
 
     @Bean
     public LoadKeycloakUserPort loadKeycloakUserPort(JpaUserRepositoryAdapter jpaUserRepositoryAdapter) {
-        return jpaUserRepositoryAdapter;
-    }
-
-    @Bean
-    public RegisterKeycloakUserPort registerKeycloakUserPort(JpaUserRepositoryAdapter jpaUserRepositoryAdapter) {
         return jpaUserRepositoryAdapter;
     }
 }

@@ -113,4 +113,4 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/auth/me
 ```
 
 첫 호출 시 auth-server가 token의 `sub`로 내부 DB에 사용자 행을 lazy-create하고, 두 번째 호출부터는 기존 내부 식별자를 재사용합니다.
-동일 email의 기존 내부 사용자가 다른 `sub`로 등록되어 있으면 `AUTH-004` / `409 Conflict`로 거부됩니다.
+연결된 내부 사용자가 없으면 auth-server는 자동 생성하지 않고 `AUTH-004` / `404 Not Found`를 반환합니다.

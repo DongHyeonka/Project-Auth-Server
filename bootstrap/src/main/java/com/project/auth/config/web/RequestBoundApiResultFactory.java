@@ -5,12 +5,13 @@ import com.project.auth.presentation.support.response.ApiResultFactory;
 import org.slf4j.MDC;
 
 import java.time.Clock;
-import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 public class RequestBoundApiResultFactory implements ApiResultFactory {
 
     private static final String TRACE_ID_KEY = "traceId";
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
     private final Clock clock;
 
@@ -39,6 +40,13 @@ public class RequestBoundApiResultFactory implements ApiResultFactory {
     }
 
     private <T> ApiResult<T> result(boolean success, String code, String message, T data) {
-        return new ApiResult<>(success, code, message, data, MDC.get(TRACE_ID_KEY), Instant.now(clock).toString());
+        return new ApiResult<>(
+                success,
+                code,
+                message,
+                data,
+                MDC.get(TRACE_ID_KEY),
+                TIMESTAMP_FORMATTER.format(clock.instant())
+        );
     }
 }

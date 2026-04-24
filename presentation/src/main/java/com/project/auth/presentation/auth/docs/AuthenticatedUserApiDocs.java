@@ -14,7 +14,7 @@ public interface AuthenticatedUserApiDocs {
 
     @Operation(
             summary = "현재 사용자 조회",
-            description = "Keycloak access token을 검증한 뒤 내부 사용자 식별자를 동기화해 반환합니다."
+            description = "Keycloak access token을 검증한 뒤 이미 연결된 내부 사용자를 조회해 반환합니다."
     )
     @ApiResponses({
             @ApiResponse(
@@ -43,7 +43,7 @@ public interface AuthenticatedUserApiDocs {
                     )
             ),
             @ApiResponse(responseCode = "401", description = "유효한 Bearer token이 없음"),
-            @ApiResponse(responseCode = "409", description = "동일 이메일의 기존 내부 사용자가 있음")
+            @ApiResponse(responseCode = "404", description = "연결된 내부 Keycloak 사용자가 없음")
     })
     ApiResult<AuthenticatedUserResponse> me(AuthenticatedUser currentUser);
 }

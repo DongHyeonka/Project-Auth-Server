@@ -88,26 +88,16 @@ class AuthenticatedUserResourceServerIntegrationTest {
     }
 
     @Test
-    void me_returns_synchronized_user_with_authorities_when_bearer_token_principal_is_new() throws Exception {
+    void me_returns_404_without_creating_internal_user_when_subject_is_not_synchronized() throws Exception {
         AbstractAuthenticationToken authentication = authenticationFor(SUBJECT, EMAIL, NAME, List.of("user"));
 
         mockMvc.perform(get("/api/v1/auth/me").with(authentication(authentication)))
-                .andExpect(status().isOk())
+                .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.subject").value(SUBJECT))
-                .andExpect(jsonPath("$.data.email").value(EMAIL))
-                .andExpect(jsonPath("$.data.name").value(NAME))
-                .andExpect(jsonPath("$.data.provider").value(AuthProvider.KEYCLOAK.name()))
-                .andExpect(jsonPath("$.data.authorities[?(@=='ROLE_user')]").exists());
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("AUTH-004"));
 
-        assertThat(userJpaRepository.findByProviderAndProviderSubject(AuthProvider.KEYCLOAK, SUBJECT))
-                .isPresent()
-                .get()
-                .satisfies(entity -> {
-                    assertThat(entity.getEmail()).isEqualTo(EMAIL);
-                    assertThat(entity.getName()).isEqualTo(NAME);
-                });
+        assertThat(userJpaRepository.count()).isZero();
     }
 
     @Test
@@ -134,7 +124,7 @@ class AuthenticatedUserResourceServerIntegrationTest {
     }
 
     @Test
-    void me_returns_409_when_email_conflicts_with_existing_user() throws Exception {
+    void me_returns_404_when_subject_is_not_found_even_if_same_email_exists() throws Exception {
         userJpaRepository.save(UserJpaEntity.of(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
                 EMAIL,
@@ -147,8 +137,10 @@ class AuthenticatedUserResourceServerIntegrationTest {
         AbstractAuthenticationToken authentication = authenticationFor(SUBJECT, EMAIL, NAME, List.of("user"));
 
         mockMvc.perform(get("/api/v1/auth/me").with(authentication(authentication)))
-                .andExpect(status().isConflict())
+                .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("AUTH-004"));
+
+        assertThat(userJpaRepository.count()).isEqualTo(1);
     }
 
     @Test

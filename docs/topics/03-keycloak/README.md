@@ -8,7 +8,7 @@
 
 - auth-server는 Keycloak realm이 발급한 access token을 Resource Server로 검증합니다.
 - 로그인, OAuth2 broker, token 발급, issuer/JWKS 공개 책임은 Keycloak이 가집니다.
-- auth-server는 검증된 claim을 바탕으로 내부 사용자 식별자를 동기화합니다.
+- auth-server는 검증된 claim을 바탕으로 이미 연결된 내부 사용자를 식별합니다.
 
 ## 현재 문서
 

@@ -43,7 +43,7 @@ Keycloak이 이미 OIDC Provider와 broker 역할을 수행할 수 있으므로,
 
 ## Decision
 
-Option 2를 채택합니다. Keycloak을 인증 주체로 두고 auth-server는 Spring Security Resource Server로 token을 검증하며, 회원가입 UX와 계정 lifecycle은 Keycloak realm에 위임합니다. auth-server의 내부 사용자 row는 Keycloak이 발급한 access token이 처음 들어올 때 `(provider=KEYCLOAK, provider_subject=sub)` 기준으로 lazy-sync만 수행합니다.
+Option 2를 채택합니다. Keycloak을 인증 주체로 두고 auth-server는 Spring Security Resource Server로 token을 검증하며, 회원가입 UX와 계정 lifecycle은 Keycloak realm에 위임합니다. auth-server는 `(provider=KEYCLOAK, provider_subject=sub)` 기준으로 이미 연결된 내부 사용자만 조회합니다.
 
 ## Consequences
 
@@ -62,7 +62,7 @@ Option 2를 채택합니다. Keycloak을 인증 주체로 두고 auth-server는 
 
 ### 위험 완화
 
-- `GET /api/v1/auth/me`에서 내부 사용자 동기화만 수행하고 token 검증은 Resource Server에 맡깁니다.
-- email 중복은 기존 내부 계정 탈취를 막기 위해 자동 연결하지 않고 `KeycloakAccountConflictException`으로 409 응답합니다.
+- `GET /api/v1/auth/me`는 내부 사용자 조회만 수행하고 token 검증은 Resource Server에 맡깁니다.
+- 연결된 내부 사용자가 없으면 자동 생성이나 자동 연결 없이 `AUTH-004` 404를 반환합니다.
 - role/claim mapping은 `KeycloakJwtAuthenticationConverter` 한 곳에 둡니다.
-- 동기화는 `@Transactional` 안에서 Keycloak 외부 호출 없이 내부 DB lookup/insert만 수행해 `no DB transaction held across remote call` 규칙을 지킵니다.
+- 조회 흐름은 내부 DB lookup만 수행하므로 `GET`에 숨은 쓰기 부작용을 두지 않습니다.

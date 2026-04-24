@@ -2,7 +2,6 @@ package com.project.auth.presentation.support.exception;
 
 import com.project.auth.application.support.exception.AuthErrorCode;
 import com.project.auth.application.support.exception.BusinessException;
-import com.project.auth.application.support.exception.CommonErrorCode;
 import com.project.auth.application.support.logging.LogSanitizer;
 import com.project.auth.presentation.support.response.ApiResult;
 import com.project.auth.presentation.support.response.ApiResultFactory;
@@ -35,12 +34,6 @@ public class ApplicationExceptionHandler {
             AuthenticationException exception,
             HttpServletRequest request
     ) {
-        log.warn(
-                "Authentication required. method={} requestPath={}",
-                request.getMethod(),
-                LogSanitizer.normalize(request.getRequestURI())
-        );
-
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(AuthErrorCode.AUTHENTICATION_REQUIRED))
                 .body(apiResultFactory.failure(
                         AuthErrorCode.AUTHENTICATION_REQUIRED.code(),
@@ -53,12 +46,6 @@ public class ApplicationExceptionHandler {
             AccessDeniedException exception,
             HttpServletRequest request
     ) {
-        log.warn(
-                "Access denied. method={} requestPath={}",
-                request.getMethod(),
-                LogSanitizer.normalize(request.getRequestURI())
-        );
-
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(AuthErrorCode.ACCESS_DENIED))
                 .body(apiResultFactory.failure(
                         AuthErrorCode.ACCESS_DENIED.code(),
@@ -100,24 +87,4 @@ public class ApplicationExceptionHandler {
                         PresentationErrorCode.MESSAGE_NOT_WRITABLE.message()
                 ));
     }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResult<Void>> handleUnexpectedException(
-            Exception exception,
-            HttpServletRequest request
-    ) {
-        log.error(
-                "Unhandled exception. method={} requestPath={}",
-                request.getMethod(),
-                LogSanitizer.normalize(request.getRequestURI()),
-                exception
-        );
-
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INTERNAL_SERVER_ERROR))
-                .body(apiResultFactory.failure(
-                        CommonErrorCode.INTERNAL_SERVER_ERROR.code(),
-                        CommonErrorCode.INTERNAL_SERVER_ERROR.message()
-                ));
-    }
-
 }

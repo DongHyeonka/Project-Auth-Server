@@ -39,7 +39,7 @@ spring:
 회원가입 UX까지 Keycloak realm에 맡겼다. Keycloak `Realm Settings → Login → User registration: ON`으로 self-service 가입을 켜고, 소셜 로그인 broker도 Keycloak에 등록해 auth-server는 Google/GitHub Client Secret을 모르게 했다.
 
 애플리케이션은 Keycloak token의 `sub`, `email`, `name`, `realm_access.roles`만 읽어 전용 principal로 바꾼다.
-내부 사용자 row는 `provider=KEYCLOAK`, `provider_subject=sub` 기준으로 찾고, 없으면 새로 만든다. email 중복은 자동 연결하지 않고 409로 돌려준다.
+내부 사용자 row는 `provider=KEYCLOAK`, `provider_subject=sub` 기준으로만 조회한다. 연결된 내부 사용자가 없으면 자동 생성하지 않고 404로 돌려준다.
 
 자체 JWT 발급 어댑터, Vault Transit signer, 로컬 signup 컨트롤러와 `encoded_password` 컬럼까지 같이 지웠다.
 
@@ -53,4 +53,4 @@ spring:
 ## 참고 자료
 
 - 원문 문서: [`docs/topics/03-keycloak/02-adr-keycloak-resource-server.md`](../topics/03-keycloak/02-adr-keycloak-resource-server.md)
-- 관련 코드: `ResourceServerSecurityConfiguration`, `KeycloakJwtAuthenticationConverter`, `KeycloakUserSynchronizer`
+- 관련 코드: `ResourceServerSecurityConfiguration`, `KeycloakJwtAuthenticationConverter`, `KeycloakUserLoader`

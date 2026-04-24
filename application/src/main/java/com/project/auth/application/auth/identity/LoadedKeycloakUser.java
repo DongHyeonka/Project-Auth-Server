@@ -4,7 +4,7 @@ import com.project.auth.domain.user.model.User;
 
 import java.util.UUID;
 
-public record SyncedKeycloakUser(
+public record LoadedKeycloakUser(
         UUID userId,
         String email,
         String name,
@@ -12,8 +12,8 @@ public record SyncedKeycloakUser(
         String providerSubject
 ) {
 
-    public static SyncedKeycloakUser from(User user) {
-        return new SyncedKeycloakUser(
+    public static LoadedKeycloakUser from(User user) {
+        return new LoadedKeycloakUser(
                 user.getId(),
                 user.getEmail(),
                 user.getName(),

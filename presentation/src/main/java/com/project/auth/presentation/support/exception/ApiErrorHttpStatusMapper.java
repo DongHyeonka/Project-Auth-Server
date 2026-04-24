@@ -45,7 +45,7 @@ public final class ApiErrorHttpStatusMapper {
             case AUTHENTICATION_REQUIRED -> HttpStatus.UNAUTHORIZED;
             case ACCESS_DENIED -> HttpStatus.FORBIDDEN;
             case KEYCLOAK_CLAIMS_INVALID -> HttpStatus.BAD_REQUEST;
-            case KEYCLOAK_ACCOUNT_CONFLICT -> HttpStatus.CONFLICT;
+            case KEYCLOAK_USER_NOT_FOUND -> HttpStatus.NOT_FOUND;
         };
     }
 }

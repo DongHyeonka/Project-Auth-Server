@@ -20,8 +20,8 @@ flowchart LR
 
 - Keycloak: 로그인, OAuth2 broker, issuer, token 발급, JWKS 공개를 소유합니다.
 - auth-server: Spring Security Resource Server로 token signature, issuer, expiry를 검증합니다.
-- application: 검증된 `sub`, `email`, `name` claim을 내부 사용자 식별자로 동기화합니다.
-- infrastructure: `provider=KEYCLOAK`, `provider_subject=sub` 기준으로 users row를 조회 또는 생성합니다.
+- application: 검증된 `sub`, `email`, `name` claim으로 이미 연결된 내부 사용자를 식별합니다.
+- infrastructure: `provider=KEYCLOAK`, `provider_subject=sub` 기준으로 users row를 조회합니다.
 
 ## How
 
@@ -36,12 +36,12 @@ flowchart LR
 - `scope` -> `SCOPE_*`
 - `realm_access.roles` -> `ROLE_*`
 
-`GET /api/v1/auth/me`는 `@CurrentUser AuthenticatedUser`를 받아 `SyncKeycloakUserUseCase`에 최소 claim만 넘깁니다.  
-이 유스케이스는 `(KEYCLOAK, sub)`가 있으면 기존 내부 사용자 id를 반환하고, 없으면 검증된 claim으로 새 내부 사용자를 생성합니다.
+`GET /api/v1/auth/me`는 `@CurrentUser AuthenticatedUser`를 받아 `LoadKeycloakUserUseCase`에 최소 claim만 넘깁니다.  
+이 유스케이스는 `(KEYCLOAK, sub)`로 기존 내부 사용자 id를 조회하고, 연결된 사용자가 없으면 `AUTH-004` 404를 반환합니다.
 
 ## Result
 
 - auth-server 내부 JWT 발급기, 로컬 RSA key source, Vault Transit signer, 자체 OIDC discovery/JWKS endpoint를 제거했습니다.
 - `/api/v1/auth/login`, `/api/v1/auth/oauth2/keycloak/*`, `/oauth2/authorization/*`, `/login/oauth2/code/*`는 더 이상 auth-server의 로그인 경로가 아닙니다.
 - 클라이언트는 Keycloak에서 token을 받고 auth-server에는 Bearer token만 보냅니다.
-- 내부 사용자 검증은 token signature 검증이 아니라 비즈니스 식별/동기화 문제로 분리됐습니다.
+- 내부 사용자 검증은 token signature 검증이 아니라 비즈니스 식별/조회 문제로 분리됐습니다.

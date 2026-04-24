@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "7f87f966-14d8-4ea0-bd6f-2a41d657aef2",
     "name": "project-auth-server resource-server",
-    "description": "Keycloak access token 검증과 내부 사용자 동기화 확인용 Postman 컬렉션",
+    "description": "Keycloak access token 검증과 연결된 내부 사용자 조회 확인용 Postman 컬렉션",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -33,7 +33,7 @@
             "me"
           ]
         },
-        "description": "Keycloak access token을 검증하고 내부 users row를 provider=KEYCLOAK, provider_subject=sub 기준으로 조회 또는 생성합니다."
+        "description": "Keycloak access token을 검증하고 이미 연결된 내부 users row를 provider=KEYCLOAK, provider_subject=sub 기준으로 조회합니다."
       },
       "event": [
         {
