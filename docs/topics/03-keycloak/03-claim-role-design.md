@@ -18,6 +18,34 @@ auth-server가 사용하는 최소 claim은 다음입니다.
 | `scope` | OAuth2 scope authority | `SCOPE_*` |
 | `realm_access.roles` | Realm role authority | `ROLE_*` |
 
+## Sample JWT payload
+
+Keycloak realm `platform` 이 발급하는 access token 의 payload 는 다음 형태입니다 (값은 예시).
+
+```json
+{
+  "iss": "https://keycloak.dev.example.com/realms/platform",
+  "sub": "1f7a3b2e-9c4d-4f81-a0e7-2b8f5c1d6a4b",
+  "aud": "auth-server-ingress",
+  "exp": 1735689600,
+  "iat": 1735686000,
+  "azp": "auth-server-ingress",
+  "scope": "openid email profile",
+  "email": "alice@example.com",
+  "email_verified": true,
+  "name": "Alice Kim",
+  "preferred_username": "alice",
+  "realm_access": {
+    "roles": ["user"]
+  },
+  "resource_access": {
+    "auth-server-ingress": { "roles": [] }
+  }
+}
+```
+
+`sub` 는 Keycloak 이 사용자에게 부여하는 immutable UUID 로, 내부 DB 의 `provider_subject` 와 1:1 로 묶입니다. `realm_access.roles` 는 위 표의 `ROLE_*` 매핑 대상입니다.
+
 ## How
 
 `KeycloakJwtAuthenticationConverter`가 JWT claim을 `AuthenticatedUser`로 변환합니다.

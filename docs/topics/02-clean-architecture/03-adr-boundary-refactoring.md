@@ -67,3 +67,7 @@ Option 2를 선택해 request metadata, OAuth2 provider mapping, transaction bou
 - 외부 API 응답 shape와 endpoint path는 유지한다.
 - `./gradlew test`로 application, presentation, infrastructure, bootstrap 테스트를 모두 통과시킨다.
 - DB provider별 필수 필드는 Flyway constraint로 한 번 더 보호한다.
+
+## 후속 정리
+
+본 ADR 시점에 정리된 Vault Transit client 는 이후 [ADR-002 Keycloak 전환](../03-keycloak/02-adr-keycloak-resource-server.md) 에서 자체 JWT 발급 책임이 사라지면서 통째로 제거됨. 자세한 제거 범위는 [04-adr-token-ownership-cleanup.md](../03-keycloak/04-adr-token-ownership-cleanup.md).

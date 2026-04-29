@@ -1,7 +1,6 @@
 package com.project.authmigration;
 
 import com.project.auth.config.persistence.MigrationProperties;
-import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +15,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+
+import javax.sql.DataSource;
 
 @SpringBootConfiguration
 @EnableAutoConfiguration

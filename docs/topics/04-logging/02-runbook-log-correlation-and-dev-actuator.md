@@ -39,15 +39,15 @@
 
 ### Step 1
 
-인증이 필요한 endpoint를 익명으로 호출해 traceId를 확보합니다.
+인증이 필요한 endpoint 를 Bearer token 없이 호출해 traceId 를 확보합니다.
 
 ```bash
-curl -i http://localhost:8080/api/v1/auth/oauth2/complete
+curl -i http://localhost:8080/api/v1/auth/me
 ```
 
 예상 결과:
 
-- 응답은 `401 Unauthorized`
+- 응답은 `401 Unauthorized` (Resource Server 가 token 부재로 거절)
 - `X-Trace-Id` 헤더가 존재
 - 응답 body의 `traceId`가 헤더와 동일
 - `traceId` 값은 32자리 lowercase hex
@@ -84,10 +84,10 @@ curl -i http://localhost:8080/api/v1/auth/me \
 
 ### Step 4
 
-가짜 `X-Forwarded-For`를 넣어도 앱 코드가 raw header를 직접 읽지 않는지 확인합니다.
+가짜 `X-Forwarded-For` 를 넣어도 앱 코드가 raw header 를 직접 읽지 않는지 확인합니다. health endpoint 처럼 항상 응답하는 경로를 사용합니다.
 
 ```bash
-curl -i http://localhost:8080/login \
+curl -i http://localhost:8080/actuator/health \
   -H 'X-Forwarded-For: 203.0.113.10' \
   -H 'User-Agent: runbook-forwarded-check'
 ```

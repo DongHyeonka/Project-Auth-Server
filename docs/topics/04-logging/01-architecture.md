@@ -250,11 +250,6 @@ prod profile에서는 콘솔이 structured JSON으로 나가고, Kubernetes에�
 운영 환경은 ingress, service mesh, load balancer 대역을 `SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES`로 명시해야 합니다.  
 이 값이 틀리면 access log의 `remoteIp`와 MDC의 `clientIp`는 ingress IP이거나 신뢰하면 안 되는 forwarded header 결과가 될 수 있습니다.
 
-#### 표준 분산 추적 라이브러리는 다음 단계다
-
-이번 변경은 커스텀 MDC 파이프라인을 정리하는 수준입니다.  
-W3C trace context, downstream propagation, span model이 필요해지면 `Micrometer Tracing`이나 OpenTelemetry 계열 도입이 더 적절합니다.
-
 ## 6. Alternatives Considered
 
 ### 대안 1

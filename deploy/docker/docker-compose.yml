@@ -1,10 +1,20 @@
 name: project-auth-local
 
+x-defaults: &defaults
+  init: true
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
   postgres:
+    <<: *defaults
     image: postgres:16-alpine
-    container_name: project-auth-postgres
-    restart: unless-stopped
+    env_file:
+      - ../../.env.local
     ports:
       - "${POSTGRES_HOST_PORT:-5432}:5432"
     environment:
@@ -25,15 +35,18 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks: [auth_net]
 
   keycloak:
+    <<: *defaults
     image: quay.io/keycloak/keycloak:26.5.5
-    container_name: project-auth-keycloak
-    restart: unless-stopped
+    env_file:
+      - ../../.env.local
     command:
       - start-dev
       - --import-realm
       - --http-port=8080
+      - --http-management-port=9000
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,13 +63,25 @@ services:
     volumes:
       - keycloak_data:/opt/keycloak/data
       - ../../docs/development/keycloak/realm:/opt/keycloak/data/import:ro
+    healthcheck:
+      # Keycloak image ships no curl/wget; use bash /dev/tcp against the management port.
+      test:
+        - "CMD-SHELL"
+        - |
+          exec 3<>/dev/tcp/127.0.0.1/9000 && \
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && \
+          grep -q '200 OK' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks: [auth_net]
 
   vault:
+    <<: *defaults
     image: hashicorp/vault:1.18
-    container_name: project-auth-vault
-    restart: unless-stopped
-    cap_add:
-      - IPC_LOCK
+    env_file:
+      - ../../.env.local
     command:
       - vault
       - server
@@ -66,6 +91,7 @@ services:
     ports:
       - "${VAULT_HOST_PORT:-8200}:8200"
     environment:
+      # 127.0.0.1 here is correct: it scopes the in-container `vault` CLI used by the healthcheck.
       VAULT_ADDR: http://127.0.0.1:8200
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN_ID:-project-auth-root-token}
       VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
@@ -74,11 +100,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks: [auth_net]
 
   vault-init:
     image: hashicorp/vault:1.18
-    container_name: project-auth-vault-init
+    init: true
     restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    env_file:
+      - ../../.env.local
     depends_on:
       vault:
         condition: service_healthy
@@ -91,7 +125,12 @@ services:
       - /vault-init/01-init-transit.sh
     volumes:
       - ./resources/vault/init:/vault-init:ro
+    networks: [auth_net]
 
 volumes:
   postgres_data:
   keycloak_data:
+
+networks:
+  auth_net:
+    name: project-auth-local

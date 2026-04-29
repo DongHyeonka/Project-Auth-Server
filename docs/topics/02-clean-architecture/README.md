@@ -1,29 +1,20 @@
 # Clean Architecture
 
-## 개요
+5 모듈 (`bootstrap` / `domain` / `application` / `presentation` / `infrastructure`) 의 경계 결정과 계층별 책임을 정리한다.
 
-이 주제는 현재 저장소의 레이어 구조가 왜 필요한지와, `bootstrap`이 조립 지점으로 분리된 이유를 정리합니다.
-
-## 현재 프로젝트 맥락
-
-- `domain`, `application`, `presentation`, `infrastructure`, `bootstrap` 모듈로 나뉩니다.
-- 의존 방향은 안쪽으로만 흐르도록 제한합니다.
-- ArchUnit 테스트로 규칙을 검증합니다.
-
-## 현재 문서
+## 문서
 
 | 문서 | 내용 |
 |------|------|
-| [01-principles.md](./01-principles.md) | 레이어 경계와 조립 원칙의 요약 |
-| [02-error-handling.md](./02-error-handling.md) | 예외 처리 구조, 계층별 책임, 로깅/추적 전략 |
-| [03-adr-boundary-refactoring.md](./03-adr-boundary-refactoring.md) | AGENTS 기준으로 응답, 인증, 트랜잭션, 인프라 경계를 재정렬한 결정 기록 |
+| [02-error-handling.md](./02-error-handling.md) | 예외 처리 핵심 아키텍처 — `ErrorCode` 가 HTTP status 를 모름. 계층별 책임 분리 + Security 필터 / Infrastructure 번역 |
+| [02a-validation-deep-dive.md](./02a-validation-deep-dive.md) | Validation 응답 정규화 (`Map<String, List<String>>`) + `ConstraintViolation` 의미 + `@ConfigurationProperties` 검증과의 차이 |
+| [03-adr-boundary-refactoring.md](./03-adr-boundary-refactoring.md) | AGENTS 기준으로 응답 / 인증 / 트랜잭션 / 인프라 경계를 재정렬한 ADR-003 |
+
+## 검증
+
+이 폴더가 약속하는 모든 경계 규칙은 [`LayerDependencyArchitectureTest`](../../../bootstrap/src/test/java/com/project/auth/architecture/LayerDependencyArchitectureTest.java) 에서 ArchUnit 으로 PR 마다 자동 검증.
 
 ## 관련 문서
 
 - [Architecture Overview](../../architecture/README.md)
-
-## 다음에 확장할 문서
-
-- `03-layer-structure.md`
-- `04-practical-application.md`
-- `05-adr-why-clean-architecture.md`
+- [README · Highlighted Engineering Decisions](../../../README.md#highlighted-engineering-decisions)
