@@ -1,6 +1,6 @@
 # Project-Auth-Server
 
-Clean / Hexagonal Architecture 기반 Spring Boot 4 인증 서버. [Project-Infra](https://github.com/donghyeon-ka/Project-Infra) 의 Ingress 단 ForwardAuth (oauth2-proxy + Keycloak) 가 인증을 게이트에서 처리하므로, 이 서버는 Keycloak 이 발급한 JWT 만 받는 ResourceServer 로 단순화되어 있다.
+Clean / Hexagonal Architecture 기반 Spring Boot 4 인증 서버. 브라우저 로그인과 세션 확인은 [Project-Infra](https://github.com/donghyeon-ka/project-infra) 의 Ingress 단 oauth2-proxy 가 담당하고, auth-server 는 Keycloak 이 발급한 JWT 를 Spring Security Resource Server 로 직접 검증하는 구조로 단순화했다.
 
 | | |
 |---|---|
@@ -10,7 +10,7 @@ Clean / Hexagonal Architecture 기반 Spring Boot 4 인증 서버. [Project-Infr
 | **토큰 처리** | Spring OAuth2 ResourceServer + Nimbus JWT decoder — JWKS via Keycloak. 이 서버는 토큰을 *발급* 하지 않고 *검증만* 한다 |
 | **데이터** | PostgreSQL 16, Flyway, Spring Data JPA |
 | **검증** | ArchUnit (레이어 의존성), JUnit 5 + AssertJ |
-| **인프라** | [Project-Infra](https://github.com/donghyeon-ka/Project-Infra) repo 가 K8s / Vault / Traefik / Keycloak Operator 운영 |
+| **인프라** | [Project-Infra](https://github.com/donghyeon-ka/project-infra) repo 가 K8s / Vault / Traefik / Keycloak Operator 운영 |
 
 ---
 
@@ -20,11 +20,11 @@ Clean / Hexagonal Architecture 기반 Spring Boot 4 인증 서버. [Project-Infr
 
 대부분의 Spring auth 예제는 OAuth2 Login + 세션 + JWT 검증을 컨트롤러 가까이 두고 *"인증은 서버 안에서 처리"* 한다. 그러나 인증 정책이 바뀔 때마다 코드 PR 이 필요하고, 단위 테스트는 인증을 mock 해야 한다.
 
-이 프로젝트는 정반대 방향으로 갔다. **인증은 [Project-Infra](https://github.com/donghyeon-ka/Project-Infra) 의 Ingress 단** 에서 끝나고, 백엔드는 *이미 검증된 Keycloak JWT* 만 받는다. 결과:
+이 프로젝트는 정반대 방향으로 갔다. **로그인 / 세션 확인은 [Project-Infra](https://github.com/donghyeon-ka/project-infra) 의 Ingress 단 oauth2-proxy 가 담당** 하고, auth-server 는 Keycloak 이 발급한 JWT 를 Spring Security Resource Server 로 다시 검증한다. 결과:
 
-- 컨트롤러에는 인증 분기가 없다 — 권한 체크만 남는다
-- ResourceServer 가 JWKS 만 fetch 하고 토큰 서명을 검증한다
-- Use case 단위 테스트는 인증 mock 이 0 개
+- 컨트롤러는 로그인 플로우를 직접 다루지 않고, 인증된 principal 과 권한 조건을 전제로 HTTP 계약에 집중한다
+- Resource Server 가 JWKS 를 캐시하면서 토큰 서명 / 만료 / issuer 를 검증한다
+- 인증 흐름을 use case 내부로 끌고 들어오지 않아, application 계층 테스트가 인증 mock 에 의존하지 않도록 분리했다
 
 부수적으로 다음을 다루게 됐다:
 
@@ -44,7 +44,7 @@ Clean / Hexagonal Architecture 기반 Spring Boot 4 인증 서버. [Project-Infr
 
 ![데이터 레이어: Spring → JPA → Postgres](docs/architecture/diagrams/04-data.png)
 
-이 repo 는 그림 좌측 (Spring `auth-server` → `JpaUserRepositoryAdapter` → Postgres `auth` schema, V1~V5 Flyway 마이그레이션) 만 담당한다. 우측의 `docker-registry` / `MinIO` 는 [Project-Infra](https://github.com/donghyeon-ka/Project-Infra) 가 운영하는 인프라.
+이 repo 는 그림 좌측 (Spring `auth-server` → `JpaUserRepositoryAdapter` → Postgres `auth` schema, V1~V5 Flyway 마이그레이션) 만 담당한다. 우측의 `docker-registry` / `MinIO` 는 [Project-Infra](https://github.com/donghyeon-ka/project-infra) 가 운영하는 인프라.
 
 ---
 
@@ -108,7 +108,7 @@ sequenceDiagram
     App-->>User: 200 with ApiResult AuthenticatedUserResponse
 ```
 
-> Cold/warm path 와 ForwardAuth 자세한 흐름은 [Project-Infra forward-auth 시퀀스](https://github.com/donghyeon-ka/Project-Infra/tree/main/docs/diagrams/sequence).
+> Cold/warm path 와 ForwardAuth 자세한 흐름은 [Project-Infra forward-auth 시퀀스](https://github.com/donghyeon-ka/project-infra/tree/main/docs/diagrams/sequence).
 
 ---
 
@@ -124,9 +124,9 @@ domain / application / presentation / infrastructure / bootstrap 5 모듈을 Gra
 
 `BusinessException` 의 `ErrorCode` 는 *비즈니스 의미만* 갖는다 (code + message). HTTP status 매핑은 presentation 의 [`ApiErrorHttpStatusMapper`](presentation/src/main/java/com/project/auth/presentation/support/exception/ApiErrorHttpStatusMapper.java) 가 책임. **결과: application 코드가 web 프로토콜에 누설되지 않는다**. 같은 `ErrorCode` 가 다른 채널 (gRPC / 메시지 큐) 에 가도 의미 그대로.
 
-### 3. 인증을 Ingress 단에 위임 — 백엔드는 ResourceServer
+### 3. 로그인 플로우는 Ingress 단에 위임 — auth-server 는 Resource Server 로서 JWT 검증
 
-`spring-boot-starter-oauth2-client` 가 아니라 `spring-boot-starter-oauth2-resource-server` 만 사용. **OAuth2 login flow 코드가 0 줄**. 토큰 검증은 Nimbus + JWKS, 사용자 정보는 [`KeycloakJwtAuthenticationConverter`](bootstrap/src/main/java/com/project/auth/config/auth/security/KeycloakJwtAuthenticationConverter.java) 가 claim → `AuthenticatedUser` 로 변환. 인증 흐름 그림은 위 시퀀스 참고.
+`spring-boot-starter-oauth2-client` 가 아니라 `spring-boot-starter-oauth2-resource-server` 만 사용. 브라우저 로그인 / OAuth2 redirect / callback / 세션 확인은 Ingress 단의 oauth2-proxy + Keycloak 이 담당하고, auth-server 는 Keycloak 이 발급한 JWT 를 Resource Server 로 다시 검증한다 — 즉 *Ingress 게이트* 와 *백엔드 검증* 의 이중 경계. 토큰 검증은 Nimbus + JWKS, claim → principal 변환은 [`KeycloakJwtAuthenticationConverter`](bootstrap/src/main/java/com/project/auth/config/auth/security/KeycloakJwtAuthenticationConverter.java) 가 담당. 인증 흐름 그림은 위 시퀀스 참고.
 
 ### 4. Common 모듈을 만들지 않는다
 
@@ -150,7 +150,7 @@ domain / application / presentation / infrastructure / bootstrap 5 모듈을 Gra
 
 | # | 규칙 |
 |:---:|---|
-| 6 | 배포 / 운영 매니페스트는 [Project-Infra](https://github.com/donghyeon-ka/Project-Infra) repo 또는 `deploy/` 아래로 분리. 이 repo 는 source code + 로컬 docker-compose 만 |
+| 6 | 배포 / 운영 매니페스트는 [Project-Infra](https://github.com/donghyeon-ka/project-infra) repo 또는 `deploy/` 아래로 분리. 이 repo 는 source code + 로컬 docker-compose 만 |
 | 7 | 문서는 `docs/architecture/` / `docs/topics/` (ADR + 런북) / `docs/development/` (로컬 셋업) / `docs/standards/` + `docs/examples/` (코딩 가이드) / `docs/templates/` 로 분리 |
 
 ---
@@ -184,7 +184,7 @@ project-auth-server/
 docker build -f deploy/docker/application/Dockerfile -t project-auth-server:local .
 ```
 
-> Flyway 마이그레이션은 `infrastructure/src/main/resources/db/migration/` 에 SQL 만 두고, K8s 에서는 공식 `flyway/flyway` 이미지를 initContainer 로 실행한다. 이 repo 에는 별도 migration 진입점 / 이미지를 두지 않는다 — 운영 절차는 [Project-Infra guide §10](https://github.com/donghyeon-ka/Project-Infra/blob/main/guide.md#10-마이그레이션-실행-flyway).
+> Flyway 마이그레이션은 `infrastructure/src/main/resources/db/migration/` 에 SQL 만 두고, K8s 에서는 공식 `flyway/flyway` 이미지를 initContainer 로 실행한다. 이 repo 에는 별도 migration 진입점 / 이미지를 두지 않는다 — 운영 절차는 [Project-Infra guide §10](https://github.com/donghyeon-ka/project-infra/blob/main/guide.md#10-마이그레이션-실행-flyway).
 
 ---
 
@@ -192,12 +192,12 @@ docker build -f deploy/docker/application/Dockerfile -t project-auth-server:loca
 
 | 영역 | 상태 |
 |---|---|
-| Clean / Hexagonal 5 모듈 + ArchUnit | 완성 |
-| Spring Security ResourceServer + Keycloak federation | 완성 |
-| ErrorCode / HTTP status 분리 | 완성 |
-| OpenAPI / Swagger UI | 완성 |
-| 로컬 docker-compose (Postgres / Keycloak / Vault) | 완성 |
-| K8s 운영 매니페스트 | 별도 [Project-Infra](https://github.com/donghyeon-ka/Project-Infra) |
+| Clean / Hexagonal 5 모듈 + ArchUnit | 구현됨 |
+| Spring Security Resource Server + Keycloak JWT 검증 | 구현됨 |
+| ErrorCode / HTTP status 분리 | 구현됨 |
+| OpenAPI / Swagger UI | 구현됨 |
+| 로컬 docker-compose (Postgres / Keycloak / Vault) | 구성됨 |
+| K8s 운영 매니페스트 | 별도 [Project-Infra](https://github.com/donghyeon-ka/project-infra) |
 
 ---
 
