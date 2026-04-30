@@ -28,7 +28,7 @@ Clean / Hexagonal Architecture 기반 Spring Boot 4 인증 서버. 브라우저 
 
 부수적으로 다음을 다루게 됐다:
 
-- Clean / Hexagonal 5 모듈 + ArchUnit 으로 레이어 위반 자동 차단
+- Clean / Hexagonal 5 모듈 + ArchUnit 테스트로 레이어 의존성 규칙을 코드 수준에서 검증
 - Domain 이 Spring / JPA / Servlet 을 모르는 진짜 격리
 - ErrorCode 가 HTTP status 를 모르는 *web 의미 누수 방지*
 
@@ -38,7 +38,7 @@ Clean / Hexagonal Architecture 기반 Spring Boot 4 인증 서버. 브라우저 
 
 ![Application 구조: Clean Architecture 5 모듈](docs/architecture/diagrams/03-app-ca.png)
 
-화살표는 *의존 방향*. domain 은 어떤 모듈에도 의존하지 않는다 (의존 0). bootstrap 만 모든 모듈을 알고 조립한다. ArchUnit 4 규칙으로 PR 마다 자동 차단 — [`LayerDependencyArchitectureTest`](bootstrap/src/test/java/com/project/auth/architecture/LayerDependencyArchitectureTest.java).
+화살표는 *의존 방향*. domain 은 어떤 모듈에도 의존하지 않는다 (의존 0). bootstrap 만 모든 모듈을 알고 조립한다. ArchUnit 4 규칙으로 테스트로 코드 수준에서 검증 — [`LayerDependencyArchitectureTest`](bootstrap/src/test/java/com/project/auth/architecture/LayerDependencyArchitectureTest.java).
 
 ### 데이터 레이어
 
@@ -118,7 +118,7 @@ sequenceDiagram
 
 ### 1. Clean / Hexagonal 5 모듈 + ArchUnit 강제
 
-domain / application / presentation / infrastructure / bootstrap 5 모듈을 Gradle multi-project 로 분리. **layer 위반은 PR 마다 ArchUnit 이 컴파일 단계에서 자동 차단** ([`LayerDependencyArchitectureTest`](bootstrap/src/test/java/com/project/auth/architecture/LayerDependencyArchitectureTest.java)). 결과: `presentation → infrastructure` 같은 잘못된 의존이 들어오면 PR 빌드가 빨갛게 됨. *문서로 약속하는 게 아니라 코드로 강제하는 차이*.
+domain / application / presentation / infrastructure / bootstrap 5 모듈을 Gradle multi-project 로 분리. **layer 위반은 ArchUnit이 테스트로 코드 수준에서 검증** ([`LayerDependencyArchitectureTest`](bootstrap/src/test/java/com/project/auth/architecture/LayerDependencyArchitectureTest.java)). 결과: `presentation → infrastructure` 같은 잘못된 의존이 들어오면 PR 빌드가 빨갛게 됨. *문서로 약속하는 게 아니라 코드로 강제하는 차이*.
 
 ### 2. ErrorCode 가 HTTP status 를 모른다
 
