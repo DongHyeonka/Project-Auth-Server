@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.blankOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -161,6 +162,20 @@ class ExceptionHandlingIntegrationTest {
     }
 
     @Test
+    void access_denied_for_anonymous_user_maps_to_401_authentication_required() throws Exception {
+        mockMvc.perform(get("/test-support/access-denied").with(anonymous()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(AuthErrorCode.AUTHENTICATION_REQUIRED.code()));
+    }
+
+    @Test
+    void access_denied_for_authenticated_user_remains_403_forbidden() throws Exception {
+        mockMvc.perform(get("/test-support/access-denied").with(user("user@example.com").roles("USER")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(AuthErrorCode.ACCESS_DENIED.code()));
+    }
+
+    @Test
     void framework_thrown_4xx_status_preserves_status_and_maps_to_unhandled_client_error() throws Exception {
         mockMvc.perform(get("/test-support/conflict").with(user("user@example.com").roles("USER")))
                 .andExpect(status().isConflict())
@@ -264,6 +279,11 @@ class ExceptionHandlingIntegrationTest {
         @GetMapping("/test-support/uncaught")
         String uncaughtRuntime() {
             throw new IllegalStateException("simulated unknown failure");
+        }
+
+        @GetMapping("/test-support/access-denied")
+        String accessDenied() {
+            throw new org.springframework.security.access.AccessDeniedException("simulated denial");
         }
     }
 
