@@ -3,7 +3,6 @@ package com.project.auth.config.web;
 import com.project.auth.application.support.exception.ClientFacingErrorCode;
 import com.project.auth.application.support.exception.CommonErrorCode;
 import com.project.auth.application.support.logging.LogSanitizer;
-import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
 import com.project.auth.presentation.support.exception.PresentationErrorCode;
 import com.project.auth.presentation.support.response.ApiResult;
 import com.project.auth.presentation.support.response.ApiResultFactory;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.ServletWebRequest;
 
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -48,14 +46,13 @@ class ApiErrorController implements ErrorController {
 
     @RequestMapping("/error")
     ResponseEntity<ApiResult<Void>> error(HttpServletRequest request) {
-        Throwable error = errorAttributes.getError(new ServletWebRequest(request));
-        Map<String, Object> attributes = errorAttributes.getErrorAttributes(
-                new ServletWebRequest(request),
-                ErrorAttributeOptions.defaults()
-        );
-
-        int rawStatus = resolveStatusCode(attributes.get("status"));
+        // Read status straight from the servlet attribute. We avoid
+        // ErrorAttributes.getErrorAttributes(...) here so that future
+        // ErrorAttributeOptions changes (e.g., enabling stacktrace inclusion)
+        // can't accidentally widen what this controller materializes.
+        int rawStatus = resolveStatusCode(request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE));
         HttpStatus httpStatus = safeStatus(rawStatus);
+        Throwable error = errorAttributes.getError(new ServletWebRequest(request));
         String requestPath = LogSanitizer.requestPath(originalRequestPath(request));
         String method = request.getMethod();
 

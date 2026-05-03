@@ -2,6 +2,40 @@ package com.project.auth.presentation.support.exception;
 
 import com.project.auth.application.support.exception.ClientFacingErrorCode;
 
+/**
+ * Presentation-layer error codes returned to API clients.
+ *
+ * Codes are deliberately split by trigger so client SDKs can branch on the cause:
+ * <ul>
+ *   <li>{@link #INVALID_INPUT} — request body failed bean validation
+ *       ({@code @Valid @RequestBody}, MethodArgumentNotValidException).</li>
+ *   <li>{@link #INVALID_REQUEST_BODY} — request body was unparseable
+ *       (HttpMessageNotReadableException, e.g., malformed JSON).</li>
+ *   <li>{@link #MISSING_PARAMETER} — required query/form parameter was absent
+ *       (MissingServletRequestParameterException).</li>
+ *   <li>{@link #CONSTRAINT_VIOLATION} — Jakarta Bean Validation triggered outside
+ *       a controller method argument (ConstraintViolationException, typically
+ *       from @Validated services or @RequestParam constraints).</li>
+ *   <li>{@link #TYPE_MISMATCH} — query/path/form value couldn't be converted to
+ *       the target type (TypeMismatchException, e.g., {@code id=abc} for Long).</li>
+ *   <li>{@link #INVALID_PARAMETER} — handler-method-level validation failure
+ *       (HandlerMethodValidationException, e.g., {@code @RequestParam @Size}).</li>
+ *   <li>{@link #MISSING_HEADER} — required @RequestHeader was absent.</li>
+ *   <li>{@link #REQUEST_BINDING_FAILED} — generic ServletRequestBindingException
+ *       not covered by a more specific code.</li>
+ *   <li>{@link #METHOD_NOT_ALLOWED} — HTTP method not supported by the route.</li>
+ *   <li>{@link #RESOURCE_NOT_FOUND} — no route or static resource matches the
+ *       request path.</li>
+ *   <li>{@link #UNSUPPORTED_MEDIA_TYPE} — Content-Type not accepted by the route.</li>
+ *   <li>{@link #NOT_ACCEPTABLE} — Accept header cannot be satisfied.</li>
+ *   <li>{@link #PAYLOAD_TOO_LARGE} — multipart upload exceeded the configured
+ *       size limit.</li>
+ *   <li>{@link #MESSAGE_NOT_WRITABLE} — response serialization failed (5xx).</li>
+ *   <li>{@link #UNHANDLED_CLIENT_ERROR} — fallback for 4xx status carriers
+ *       (ResponseStatusException, ErrorResponseException) or container-level 4xx
+ *       responses without a more specific mapping.</li>
+ * </ul>
+ */
 public enum PresentationErrorCode implements ClientFacingErrorCode {
     INVALID_INPUT("PRES-001", "요청 값이 올바르지 않습니다."),
     INVALID_REQUEST_BODY("PRES-002", "요청 본문을 읽을 수 없습니다."),

@@ -5,12 +5,15 @@ import com.project.auth.application.support.exception.ClientFacingErrorCode;
 import com.project.auth.application.support.exception.CommonErrorCode;
 import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
 import com.project.auth.presentation.support.exception.PresentationErrorCode;
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.importer.ClassFileImporter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpStatus;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -79,6 +82,42 @@ class ApiErrorHttpStatusMapperClientFacingCoverageTest {
         assertThat(missing)
                 .as("Every ClientFacingErrorCode enum value must have an exact-status assertion in the mapping table. "
                         + "Newly added enum values must be added to exactMappings().")
+                .isEmpty();
+    }
+
+    /**
+     * Catches the case where a future module declares a new ClientFacingErrorCode
+     * implementation (enum or otherwise) without updating either the mapping
+     * table or the mapper's switch — both of which silently fall through to
+     * INTERNAL_SERVER_ERROR via the non-sealed default branch.
+     */
+    @Test
+    void every_client_facing_error_code_implementation_on_classpath_is_covered_by_the_table() {
+        JavaClasses classes = new ClassFileImporter()
+                .importPackages("com.project.auth");
+
+        List<Class<?>> implementations = new ArrayList<>();
+        for (var javaClass : classes) {
+            if (javaClass.isAssignableTo(ClientFacingErrorCode.class) && !javaClass.isInterface()) {
+                Class<?> reflected = javaClass.reflect();
+                if (reflected.equals(ClientFacingErrorCode.class)) {
+                    continue;
+                }
+                implementations.add(reflected);
+            }
+        }
+
+        Set<Class<?>> tableImplementations = exactMappings()
+                .map(args -> args.get()[0].getClass())
+                .collect(Collectors.toCollection(HashSet::new));
+
+        Set<Class<?>> uncovered = new HashSet<>(implementations);
+        uncovered.removeAll(tableImplementations);
+
+        assertThat(uncovered)
+                .as("Every ClientFacingErrorCode implementation discovered on the classpath must contribute "
+                        + "at least one entry to exactMappings(). Uncovered types fall through the mapper's "
+                        + "non-sealed default branch and silently 500.")
                 .isEmpty();
     }
 

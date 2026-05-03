@@ -1,6 +1,7 @@
 package com.project.auth.config.auth.security;
 
 import com.project.auth.application.support.audit.AuthAuditEventType;
+import com.project.auth.application.support.logging.LogSanitizer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -43,7 +44,7 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
         recordAudit(request, AuthAuditEventType.AUTHENTICATION_REQUIRED, "Authentication required.");
         if (response.isCommitted()) {
             log.warn("Response already committed; cannot render authentication error body. requestPath={}",
-                    request.getRequestURI());
+                    LogSanitizer.requestPath(request.getRequestURI()));
             return;
         }
         handlerExceptionResolver.resolveException(request, response, null, authException);
@@ -58,7 +59,7 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
         recordAudit(request, AuthAuditEventType.ACCESS_DENIED, "Access denied.");
         if (response.isCommitted()) {
             log.warn("Response already committed; cannot render access-denied error body. requestPath={}",
-                    request.getRequestURI());
+                    LogSanitizer.requestPath(request.getRequestURI()));
             return;
         }
         handlerExceptionResolver.resolveException(request, response, null, accessDeniedException);

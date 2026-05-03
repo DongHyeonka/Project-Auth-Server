@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.core.Ordered;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.ErrorResponse;
@@ -225,21 +225,26 @@ public class RequestExceptionHandler {
      * categorization, 4xx falls back to UNHANDLED_CLIENT_ERROR so client SDKs can
      * still distinguish "your request was wrong" from a server-side fault.
      */
+    /**
+     * Both ResponseStatusException and ErrorResponseException implement
+     * {@link ErrorResponse} AND extend {@link Throwable}, so the cast at the
+     * log call site is safe today. If a future ErrorResponse implementation that
+     * is not Throwable is added to this @ExceptionHandler, the cast will fail at
+     * runtime — keep this handler restricted to the two declared exception types.
+     */
     @ExceptionHandler({ResponseStatusException.class, ErrorResponseException.class})
     public ResponseEntity<ApiResult<Void>> handleErrorResponseException(
             ErrorResponse exception,
             HttpServletRequest request
     ) {
-        HttpStatus carriedStatus = HttpStatus.resolve(exception.getStatusCode().value());
-        if (carriedStatus == null) {
-            carriedStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-        }
+        HttpStatusCode carriedStatus = exception.getStatusCode();
+        int statusValue = carriedStatus.value();
 
-        if (carriedStatus.is5xxServerError()) {
+        if (statusValue >= 500) {
             log.error("Framework-thrown 5xx status. method={} requestPath={} status={}",
                     request.getMethod(),
                     LogSanitizer.requestPath(request.getRequestURI()),
-                    carriedStatus.value(),
+                    statusValue,
                     (Throwable) exception);
             return ResponseEntity.status(carriedStatus)
                     .body(apiResultFactory.failure(
@@ -251,7 +256,7 @@ public class RequestExceptionHandler {
         log.warn("Framework-thrown 4xx status. method={} requestPath={} status={} errorCode={}",
                 request.getMethod(),
                 LogSanitizer.requestPath(request.getRequestURI()),
-                carriedStatus.value(),
+                statusValue,
                 PresentationErrorCode.UNHANDLED_CLIENT_ERROR.code());
         return ResponseEntity.status(carriedStatus)
                 .body(apiResultFactory.failure(

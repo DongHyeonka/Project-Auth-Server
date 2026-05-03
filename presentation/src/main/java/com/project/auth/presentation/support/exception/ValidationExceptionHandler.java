@@ -35,6 +35,14 @@ public class ValidationExceptionHandler {
      */
     public static final String GLOBAL_ERROR_KEY = "__global__";
 
+    /**
+     * Fallback message used when {@code getDefaultMessage()} or {@code error.code()}
+     * is null/blank. Bean Validation allows messages to be defined only via message
+     * codes resolved by a MessageSource, in which case getDefaultMessage() returns
+     * null. Without this sentinel the response would contain {@code [null]} entries.
+     */
+    static final String UNRESOLVED_VIOLATION_MESSAGE = "validation failed";
+
     private static final Logger log = LoggerFactory.getLogger(ValidationExceptionHandler.class);
 
     private final ApiResultFactory apiResultFactory;
@@ -50,11 +58,11 @@ public class ValidationExceptionHandler {
         Map<String, List<String>> errors = new LinkedHashMap<>();
         for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
             errors.computeIfAbsent(fieldError.getField(), k -> new ArrayList<>())
-                    .add(fieldError.getDefaultMessage());
+                    .add(resolveMessage(fieldError.getDefaultMessage(), fieldError.getCode()));
         }
         for (ObjectError globalError : exception.getBindingResult().getGlobalErrors()) {
             errors.computeIfAbsent(GLOBAL_ERROR_KEY, k -> new ArrayList<>())
-                    .add(globalError.getDefaultMessage());
+                    .add(resolveMessage(globalError.getDefaultMessage(), globalError.getCode()));
         }
 
         log.warn("Validation failed: {}", errors);
@@ -75,7 +83,7 @@ public class ValidationExceptionHandler {
         for (ConstraintViolation<?> violation : exception.getConstraintViolations()) {
             String pointer = toJsonPointer(violation.getPropertyPath());
             errors.computeIfAbsent(pointer, k -> new ArrayList<>())
-                    .add(violation.getMessage());
+                    .add(resolveMessage(violation.getMessage(), null));
         }
 
         log.warn("Constraint violation: {}", errors);
@@ -104,8 +112,10 @@ public class ValidationExceptionHandler {
                 unnamedCounter++;
             }
             for (MessageSourceResolvable error : result.getResolvableErrors()) {
+                String[] codes = error.getCodes();
+                String firstCode = codes != null && codes.length > 0 ? codes[0] : null;
                 errors.computeIfAbsent(key, k -> new ArrayList<>())
-                        .add(error.getDefaultMessage());
+                        .add(resolveMessage(error.getDefaultMessage(), firstCode));
             }
         }
         if (unnamedCounter > 0) {
@@ -152,5 +162,15 @@ public class ValidationExceptionHandler {
 
     private static String escapeJsonPointerSegment(String segment) {
         return segment.replace("~", "~0").replace("/", "~1");
+    }
+
+    private static String resolveMessage(String defaultMessage, String fallbackCode) {
+        if (defaultMessage != null && !defaultMessage.isBlank()) {
+            return defaultMessage;
+        }
+        if (fallbackCode != null && !fallbackCode.isBlank()) {
+            return fallbackCode;
+        }
+        return UNRESOLVED_VIOLATION_MESSAGE;
     }
 }

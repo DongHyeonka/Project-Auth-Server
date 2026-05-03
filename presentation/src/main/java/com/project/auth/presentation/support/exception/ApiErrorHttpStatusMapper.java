@@ -3,19 +3,36 @@ package com.project.auth.presentation.support.exception;
 import com.project.auth.application.support.exception.AuthErrorCode;
 import com.project.auth.application.support.exception.ClientFacingErrorCode;
 import com.project.auth.application.support.exception.CommonErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 
 public final class ApiErrorHttpStatusMapper {
 
+    private static final Logger log = LoggerFactory.getLogger(ApiErrorHttpStatusMapper.class);
+
     private ApiErrorHttpStatusMapper() {
     }
 
+    /**
+     * The default branch exists because {@link ClientFacingErrorCode} is non-sealed
+     * (modules outside application/presentation may add their own implementations
+     * without crossing the layer boundary). When that happens the compiler cannot
+     * enforce exhaustiveness, so we log a WARN to surface the gap in operator
+     * dashboards instead of silently 500-ing forever. The architecture-level
+     * gate that any new ClientFacingErrorCode must be added to the mapping table
+     * lives in ApiErrorHttpStatusMapperClientFacingCoverageTest.
+     */
     public static HttpStatus map(ClientFacingErrorCode errorCode) {
         return switch (errorCode) {
             case CommonErrorCode commonErrorCode -> mapCommon(commonErrorCode);
             case AuthErrorCode authErrorCode -> mapAuth(authErrorCode);
             case PresentationErrorCode presentationErrorCode -> mapPresentation(presentationErrorCode);
-            default -> HttpStatus.INTERNAL_SERVER_ERROR;
+            default -> {
+                log.warn("Unmapped ClientFacingErrorCode reached default branch. type={} code={} -> falling back to 500",
+                        errorCode.getClass().getName(), errorCode.code());
+                yield HttpStatus.INTERNAL_SERVER_ERROR;
+            }
         };
     }
 

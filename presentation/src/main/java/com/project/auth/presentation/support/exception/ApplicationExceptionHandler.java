@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,13 +50,15 @@ public class ApplicationExceptionHandler {
      * Honest handling of response-serialization failure.
      *
      * If the response is already committed there is no recovery path: bytes are on
-     * the wire and the client will see a truncated response. Returning ResponseEntity
-     * here would either be silently dropped by the framework or produce a second
-     * write that fails the same way. Instead we log and return null so Spring stops
-     * processing rather than recursively re-entering the same broken serializer.
+     * the wire and the client will see a truncated response. Returning a body would
+     * either be silently dropped or produce a second write that fails the same way.
+     * In that case we return an empty ResponseEntity (no body) instead of null,
+     * because @ExceptionHandler returning null is interpreted by Spring as "no
+     * response written" and can re-enter the resolver chain — exactly the recursive
+     * failure we are trying to avoid.
      *
-     * If the response is NOT yet committed we can attempt the standard ApiResult
-     * payload, but the original failure may recur if it was structural; the
+     * If the response is NOT yet committed we attempt the standard ApiResult
+     * payload. The original failure may recur if it was structural; the
      * @ExceptionHandler(Exception.class) safety net will catch the second pass.
      */
     @ExceptionHandler(HttpMessageNotWritableException.class)
@@ -73,7 +76,7 @@ public class ApplicationExceptionHandler {
         );
 
         if (response.isCommitted()) {
-            return null;
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.MESSAGE_NOT_WRITABLE))
