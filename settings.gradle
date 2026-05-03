@@ -23,15 +23,22 @@ dependencyResolutionManagement {
             version("lombok", "1.18.30")
             version("springdoc", "3.0.2")
             version("swaggerAnnotationsJakarta", "2.2.43")
+            version("pitest", "1.19.1")
+            version("pitestJunit5", "1.2.2")
+            version("pitestPlugin", "1.19.0-rc.1")
+            version("jqwik", "1.9.3")
 
             // [플러그인 정의]
             plugin("spring-boot", "org.springframework.boot").versionRef("springBoot")
             plugin("spring-dependency-management", "io.spring.dependency-management").versionRef("springDependencyManagement")
+            plugin("pitest", "info.solidsoft.pitest").versionRef("pitestPlugin")
 
             // [라이브러리 정의]
             library("lombok", "org.projectlombok", "lombok").versionRef("lombok")
             library("springdoc-openapi-webmvc-ui", "org.springdoc", "springdoc-openapi-starter-webmvc-ui").versionRef("springdoc")
             library("swagger-annotations-jakarta", "io.swagger.core.v3", "swagger-annotations-jakarta").versionRef("swaggerAnnotationsJakarta")
+            library("jqwik", "net.jqwik", "jqwik").versionRef("jqwik")
+            library("pitest-junit5-plugin", "org.pitest", "pitest-junit5-plugin").versionRef("pitestJunit5")
         }
     }
 }

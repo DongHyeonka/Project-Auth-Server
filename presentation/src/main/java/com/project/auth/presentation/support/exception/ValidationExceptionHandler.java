@@ -172,7 +172,7 @@ public class ValidationExceptionHandler {
      * ConstraintViolationException 핸들러와 키 형식을 통일하여, 응답 errors 맵의 키 규약을
      * 단일화한다(클라이언트가 두 가지 형식을 분기 처리할 필요가 없게 한다).
      */
-    private static String fieldFieldToJsonPointer(String field) {
+    static String fieldFieldToJsonPointer(String field) {
         if (field == null || field.isEmpty()) {
             return "/";
         }
