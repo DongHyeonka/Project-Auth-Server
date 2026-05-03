@@ -217,20 +217,17 @@ public class RequestExceptionHandler {
     }
 
     /**
-     * Handles framework-thrown status carriers that aren't already covered by a
-     * more specific handler. Preserves the carried status code so that 4xx vs 5xx
-     * routing decisions made upstream survive to the client.
+     * 더 구체적인 핸들러로 잡히지 않은, 프레임워크가 직접 던진 상태 캐리어 예외 처리.
+     * 상위에서 결정된 4xx vs 5xx 분기가 클라이언트까지 보존되도록 carriedStatus를 그대로 사용한다.
      *
-     * Body classification: 5xx collapses to COMMON-999 to avoid leaking internal
-     * categorization, 4xx falls back to UNHANDLED_CLIENT_ERROR so client SDKs can
-     * still distinguish "your request was wrong" from a server-side fault.
-     */
-    /**
-     * Both ResponseStatusException and ErrorResponseException implement
-     * {@link ErrorResponse} AND extend {@link Throwable}, so the cast at the
-     * log call site is safe today. If a future ErrorResponse implementation that
-     * is not Throwable is added to this @ExceptionHandler, the cast will fail at
-     * runtime — keep this handler restricted to the two declared exception types.
+     * 본문 분류: 5xx는 내부 분류 노출을 막기 위해 COMMON-999로 정규화하고, 4xx는
+     * UNHANDLED_CLIENT_ERROR로 폴백한다. 클라이언트 SDK가 "요청 잘못" vs "서버 결함"을
+     * 여전히 구분할 수 있게 하기 위함이다.
+     *
+     * ResponseStatusException과 ErrorResponseException은 둘 다 {@link ErrorResponse}를 구현하면서
+     * 동시에 {@link Throwable}을 상속하므로 로그 호출부의 (Throwable) 캐스트가 안전하다.
+     * 향후 Throwable이 아닌 ErrorResponse 구현체를 이 @ExceptionHandler 목록에 추가하면
+     * 런타임 ClassCastException이 발생하므로, 이 핸들러는 명시한 두 예외 타입으로만 한정한다.
      */
     @ExceptionHandler({ResponseStatusException.class, ErrorResponseException.class})
     public ResponseEntity<ApiResult<Void>> handleErrorResponseException(

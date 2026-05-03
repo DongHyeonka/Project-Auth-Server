@@ -28,18 +28,20 @@ import java.util.Map;
 public class ValidationExceptionHandler {
 
     /**
-     * Bucket key used for class-level / cross-field validation failures that have
-     * no field association (e.g., {@code @AssertTrue} on the DTO, custom class-level
-     * {@code ConstraintValidator}). Without this bucket, ObjectError instances would
-     * be silently dropped and clients would see {@code errors: {}} with no diagnosis.
+     * 필드와 연결되지 않은 클래스 레벨/cross-field 검증 실패(예: DTO의 {@code @AssertTrue},
+     * 커스텀 클래스 레벨 {@code ConstraintValidator})를 담는 버킷 키.
+     *
+     * 이 버킷이 없으면 ObjectError가 조용히 폐기되어 클라이언트는 {@code errors: {}}만 받고
+     * 어디가 잘못됐는지 알 수 없다.
      */
     public static final String GLOBAL_ERROR_KEY = "__global__";
 
     /**
-     * Fallback message used when {@code getDefaultMessage()} or {@code error.code()}
-     * is null/blank. Bean Validation allows messages to be defined only via message
-     * codes resolved by a MessageSource, in which case getDefaultMessage() returns
-     * null. Without this sentinel the response would contain {@code [null]} entries.
+     * {@code getDefaultMessage()}와 {@code error.code()}가 모두 null/공백인 경우의 폴백 메시지.
+     *
+     * Bean Validation은 MessageSource로 해석되는 메시지 코드만 정의된 케이스를 허용하며,
+     * 이때 getDefaultMessage()는 null을 반환할 수 있다. 이 sentinel이 없으면 응답 errors에
+     * {@code [null]} 항목이 그대로 들어간다.
      */
     static final String UNRESOLVED_VIOLATION_MESSAGE = "validation failed";
 
@@ -134,13 +136,13 @@ public class ValidationExceptionHandler {
     }
 
     /**
-     * Converts a Bean Validation property path into a JSON Pointer (RFC 6901),
-     * e.g., {@code users[0].email} -> {@code /users/0/email}, so collisions between
-     * different parameters that happen to end in the same field name are impossible
-     * and the format is unambiguous for clients.
+     * Bean Validation의 propertyPath를 JSON Pointer(RFC 6901) 형식으로 변환한다.
+     * 예) {@code users[0].email} -> {@code /users/0/email}
      *
-     * Method parameter prefixes (e.g., {@code findUser.id}) are preserved as the
-     * first pointer segment because they identify the source parameter.
+     * 서로 다른 파라미터가 우연히 같은 필드명으로 끝나도 충돌이 발생하지 않으며,
+     * 클라이언트 입장에서 모호함이 없는 형식이다.
+     * 메서드 파라미터 접두사(예: {@code findUser.id})는 출처 파라미터를 식별하므로
+     * 첫 pointer 세그먼트로 보존한다.
      */
     private static String toJsonPointer(Path path) {
         StringBuilder builder = new StringBuilder();

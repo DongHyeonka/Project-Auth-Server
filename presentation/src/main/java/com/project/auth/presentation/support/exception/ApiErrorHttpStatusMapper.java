@@ -15,13 +15,13 @@ public final class ApiErrorHttpStatusMapper {
     }
 
     /**
-     * The default branch exists because {@link ClientFacingErrorCode} is non-sealed
-     * (modules outside application/presentation may add their own implementations
-     * without crossing the layer boundary). When that happens the compiler cannot
-     * enforce exhaustiveness, so we log a WARN to surface the gap in operator
-     * dashboards instead of silently 500-ing forever. The architecture-level
-     * gate that any new ClientFacingErrorCode must be added to the mapping table
-     * lives in ApiErrorHttpStatusMapperClientFacingCoverageTest.
+     * default 분기가 존재하는 이유: {@link ClientFacingErrorCode}가 non-sealed이므로
+     * (application/presentation 외 모듈도 레이어 경계를 넘지 않고 자체 구현을 추가할 수 있다)
+     * 컴파일러가 exhaustiveness를 강제할 수 없다. 새로운 구현이 매핑 테이블에 누락된 채
+     * 들어오면 조용히 500이 되는 대신 WARN 로그로 드러내어 운영 대시보드에서 식별 가능하게 한다.
+     *
+     * "새 ClientFacingErrorCode 구현은 반드시 매핑 테이블에 등록해야 한다"는 아키텍처 차원의
+     * 게이트는 ApiErrorHttpStatusMapperClientFacingCoverageTest에 있다.
      */
     public static HttpStatus map(ClientFacingErrorCode errorCode) {
         return switch (errorCode) {

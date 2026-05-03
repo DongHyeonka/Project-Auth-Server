@@ -14,9 +14,9 @@ public class RequestBoundApiResultFactory implements ApiResultFactory {
 
     private static final String TRACE_ID_KEY = "traceId";
     /**
-     * Sentinel emitted when MDC has no traceId. A literal placeholder is more visible
-     * in logs and dashboards than a JSON {@code null}, which would otherwise mask the
-     * fact that TraceIdFilter is missing or misconfigured.
+     * MDC에 traceId가 없을 때 사용하는 sentinel. JSON {@code null}로 그대로 두면
+     * TraceIdFilter가 누락/오설정된 사실이 가려지므로, 명시적인 placeholder 문자열로
+     * 로그·대시보드에서 즉시 식별 가능하게 한다.
      */
     static final String MISSING_TRACE_ID = "-";
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ISO_INSTANT;

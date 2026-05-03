@@ -12,10 +12,9 @@ public interface ApiResultFactory {
     ApiResult<Void> failure(String code, String message);
 
     /**
-     * Failure with validation/cross-field diagnostics. Stored in the dedicated
-     * {@code errors} field so the response shape stays consistent and clients can
-     * deserialize {@code data} as the success type without needing to model an
-     * error union.
+     * 검증/cross-field 진단을 동반한 실패 응답. 진단 정보는 전용 {@code errors} 필드에
+     * 저장되므로 응답 형태가 일관되며, 클라이언트는 에러 union을 모델링하지 않고도
+     * {@code data}를 성공 타입으로 그대로 역직렬화할 수 있다.
      */
     ApiResult<Void> failure(String code, String message, Map<String, List<String>> errors);
 }

@@ -3,37 +3,35 @@ package com.project.auth.presentation.support.exception;
 import com.project.auth.application.support.exception.ClientFacingErrorCode;
 
 /**
- * Presentation-layer error codes returned to API clients.
+ * 클라이언트에 반환되는 presentation 계층 에러 코드.
  *
- * Codes are deliberately split by trigger so client SDKs can branch on the cause:
+ * 클라이언트 SDK가 원인별로 분기 로직을 짤 수 있도록 트리거별로 의도적으로 코드를 분리했다.
  * <ul>
- *   <li>{@link #INVALID_INPUT} — request body failed bean validation
+ *   <li>{@link #INVALID_INPUT} — 요청 본문 빈 검증 실패
  *       ({@code @Valid @RequestBody}, MethodArgumentNotValidException).</li>
- *   <li>{@link #INVALID_REQUEST_BODY} — request body was unparseable
- *       (HttpMessageNotReadableException, e.g., malformed JSON).</li>
- *   <li>{@link #MISSING_PARAMETER} — required query/form parameter was absent
+ *   <li>{@link #INVALID_REQUEST_BODY} — 요청 본문 파싱 실패
+ *       (HttpMessageNotReadableException, 예: 잘못된 JSON).</li>
+ *   <li>{@link #MISSING_PARAMETER} — 필수 query/form 파라미터 누락
  *       (MissingServletRequestParameterException).</li>
- *   <li>{@link #CONSTRAINT_VIOLATION} — Jakarta Bean Validation triggered outside
- *       a controller method argument (ConstraintViolationException, typically
- *       from @Validated services or @RequestParam constraints).</li>
- *   <li>{@link #TYPE_MISMATCH} — query/path/form value couldn't be converted to
- *       the target type (TypeMismatchException, e.g., {@code id=abc} for Long).</li>
- *   <li>{@link #INVALID_PARAMETER} — handler-method-level validation failure
- *       (HandlerMethodValidationException, e.g., {@code @RequestParam @Size}).</li>
- *   <li>{@link #MISSING_HEADER} — required @RequestHeader was absent.</li>
- *   <li>{@link #REQUEST_BINDING_FAILED} — generic ServletRequestBindingException
- *       not covered by a more specific code.</li>
- *   <li>{@link #METHOD_NOT_ALLOWED} — HTTP method not supported by the route.</li>
- *   <li>{@link #RESOURCE_NOT_FOUND} — no route or static resource matches the
- *       request path.</li>
- *   <li>{@link #UNSUPPORTED_MEDIA_TYPE} — Content-Type not accepted by the route.</li>
- *   <li>{@link #NOT_ACCEPTABLE} — Accept header cannot be satisfied.</li>
- *   <li>{@link #PAYLOAD_TOO_LARGE} — multipart upload exceeded the configured
- *       size limit.</li>
- *   <li>{@link #MESSAGE_NOT_WRITABLE} — response serialization failed (5xx).</li>
- *   <li>{@link #UNHANDLED_CLIENT_ERROR} — fallback for 4xx status carriers
- *       (ResponseStatusException, ErrorResponseException) or container-level 4xx
- *       responses without a more specific mapping.</li>
+ *   <li>{@link #CONSTRAINT_VIOLATION} — 컨트롤러 메서드 인자 범위 밖에서 트리거된
+ *       Jakarta Bean Validation (ConstraintViolationException, 주로 @Validated 서비스
+ *       또는 @RequestParam 제약).</li>
+ *   <li>{@link #TYPE_MISMATCH} — query/path/form 값을 대상 타입으로 변환 실패
+ *       (TypeMismatchException, 예: Long에 {@code id=abc}).</li>
+ *   <li>{@link #INVALID_PARAMETER} — 핸들러 메서드 레벨 검증 실패
+ *       (HandlerMethodValidationException, 예: {@code @RequestParam @Size}).</li>
+ *   <li>{@link #MISSING_HEADER} — 필수 @RequestHeader 누락.</li>
+ *   <li>{@link #REQUEST_BINDING_FAILED} — 더 구체적인 코드로 분류되지 않은
+ *       일반 ServletRequestBindingException.</li>
+ *   <li>{@link #METHOD_NOT_ALLOWED} — 라우트가 지원하지 않는 HTTP 메서드.</li>
+ *   <li>{@link #RESOURCE_NOT_FOUND} — 요청 경로에 매칭되는 라우트/정적 리소스 없음.</li>
+ *   <li>{@link #UNSUPPORTED_MEDIA_TYPE} — 라우트가 수용하지 않는 Content-Type.</li>
+ *   <li>{@link #NOT_ACCEPTABLE} — Accept 헤더를 만족시킬 수 없음.</li>
+ *   <li>{@link #PAYLOAD_TOO_LARGE} — multipart 업로드가 허용 한도 초과.</li>
+ *   <li>{@link #MESSAGE_NOT_WRITABLE} — 응답 직렬화 실패 (5xx).</li>
+ *   <li>{@link #UNHANDLED_CLIENT_ERROR} — 더 구체적인 매핑이 없는 4xx 상태 캐리어
+ *       (ResponseStatusException, ErrorResponseException) 또는 컨테이너 레벨 4xx 응답에
+ *       대한 폴백.</li>
  * </ul>
  */
 public enum PresentationErrorCode implements ClientFacingErrorCode {

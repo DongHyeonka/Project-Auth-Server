@@ -20,27 +20,24 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
- * Bootstrap-layer advice for Spring Security exceptions. Lives here (not in
- * presentation) because the presentation module is architecturally forbidden to
- * depend on org.springframework.security.core / context — see ArchUnit rules in
- * LayerDependencyArchitectureTest.
+ * Spring Security 예외를 처리하는 bootstrap 계층 advice.
  *
- * AccessDeniedException is split between 401 and 403 based on the current
- * authentication: an anonymous principal hitting a protected resource needs to
- * authenticate (401), whereas an authenticated principal lacking the required
- * authority is genuinely forbidden (403). This mirrors Spring Security's
- * ExceptionTranslationFilter behavior for filter-thrown exceptions, but applies
- * the same rule when the exception escapes from a controller (e.g., method
- * security via @PreAuthorize).
+ * presentation 모듈은 ArchUnit 규칙에 의해 org.springframework.security.core / context에
+ * 직접 의존할 수 없으므로(LayerDependencyArchitectureTest 참고), 이 advice는 bootstrap에 둔다.
  *
- * Threading assumption: SecurityContextHolder uses the default ThreadLocal
- * strategy. If/when async controllers (@Async, Callable, DeferredResult, WebFlux
- * adapters) are introduced, the SecurityContext must be propagated to the worker
- * thread (DelegatingSecurityContextRunnable / MODE_INHERITABLETHREADLOCAL /
- * SecurityContextHolderStrategy customization) — otherwise this handler will see
- * an empty context on the worker and incorrectly classify an authenticated user's
- * AccessDenied as 401 instead of 403. Revisit isAnonymous() to also consult
- * HttpServletRequest.getUserPrincipal() if async paths are added.
+ * AccessDeniedException은 현재 인증 상태에 따라 401/403으로 분기한다. 익명 principal이
+ * 보호된 리소스에 접근한 경우는 인증이 필요하다는 의미로 401을 반환하고, 인증된 principal이
+ * 권한이 부족한 경우에만 403을 반환한다. Spring Security의 ExceptionTranslationFilter가
+ * 필터 단계에서 던지는 예외에 대해 적용하는 분기 로직을 컨트롤러 단(@PreAuthorize 등 메서드
+ * 보안)에서 던져진 동일 예외에도 일관되게 적용한 것이다.
+ *
+ * 스레드 가정: SecurityContextHolder는 기본 ThreadLocal 전략을 사용한다고 가정한다.
+ * 비동기 컨트롤러(@Async, Callable, DeferredResult, WebFlux adapter 등)가 도입되면
+ * SecurityContext가 워커 스레드로 전파되도록 처리해야 한다(DelegatingSecurityContextRunnable
+ * / MODE_INHERITABLETHREADLOCAL / SecurityContextHolderStrategy 커스터마이즈 등).
+ * 그렇지 않으면 워커 스레드에서 컨텍스트가 비어 있어 인증된 사용자의 AccessDenied가 잘못
+ * 401로 분류된다. 비동기 경로가 추가될 때는 isAnonymous()가 HttpServletRequest.getUserPrincipal()
+ * 도 함께 참조하도록 보강한다.
  */
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE + 5)
