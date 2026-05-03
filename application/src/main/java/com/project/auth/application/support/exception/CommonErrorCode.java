@@ -1,6 +1,6 @@
 package com.project.auth.application.support.exception;
 
-public enum CommonErrorCode implements ErrorCode {
+public enum CommonErrorCode implements ClientFacingErrorCode {
     INTERNAL_SERVER_ERROR("COMMON-999", "예상하지 못한 오류가 발생했습니다.");
 
     private final String code;

@@ -1,6 +1,6 @@
 package com.project.auth.application.support.exception;
 
-public enum AuthErrorCode implements ErrorCode {
+public enum AuthErrorCode implements ClientFacingErrorCode {
     AUTHENTICATION_REQUIRED("AUTH-001", "인증이 필요합니다."),
     ACCESS_DENIED("AUTH-002", "접근 권한이 없습니다."),
     KEYCLOAK_CLAIMS_INVALID("AUTH-003", "Keycloak 토큰 클레임이 올바르지 않습니다."),
