@@ -44,7 +44,7 @@ public class ValidationExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResult<Map<String, List<String>>>> handleValidationException(
+    public ResponseEntity<ApiResult<Void>> handleValidationException(
             MethodArgumentNotValidException exception
     ) {
         Map<String, List<String>> errors = new LinkedHashMap<>();
@@ -68,7 +68,7 @@ public class ValidationExceptionHandler {
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiResult<Map<String, List<String>>>> handleConstraintViolationException(
+    public ResponseEntity<ApiResult<Void>> handleConstraintViolationException(
             ConstraintViolationException exception
     ) {
         Map<String, List<String>> errors = new LinkedHashMap<>();
@@ -89,7 +89,7 @@ public class ValidationExceptionHandler {
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
-    public ResponseEntity<ApiResult<Map<String, List<String>>>> handleHandlerMethodValidationException(
+    public ResponseEntity<ApiResult<Void>> handleHandlerMethodValidationException(
             HandlerMethodValidationException exception
     ) {
         Map<String, List<String>> errors = new LinkedHashMap<>();

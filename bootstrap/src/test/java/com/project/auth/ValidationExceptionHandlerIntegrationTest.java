@@ -71,8 +71,8 @@ class ValidationExceptionHandlerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value(PresentationErrorCode.INVALID_INPUT.code()))
-                .andExpect(jsonPath("$.data['" + ValidationExceptionHandler.GLOBAL_ERROR_KEY + "']").isArray())
-                .andExpect(jsonPath("$.data['" + ValidationExceptionHandler.GLOBAL_ERROR_KEY + "'][0]")
+                .andExpect(jsonPath("$.errors['" + ValidationExceptionHandler.GLOBAL_ERROR_KEY + "']").isArray())
+                .andExpect(jsonPath("$.errors['" + ValidationExceptionHandler.GLOBAL_ERROR_KEY + "'][0]")
                         .value("passwords must match"));
     }
 
@@ -87,8 +87,8 @@ class ValidationExceptionHandlerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.data.password").isArray())
-                .andExpect(jsonPath("$.data['" + ValidationExceptionHandler.GLOBAL_ERROR_KEY + "']").isArray());
+                .andExpect(jsonPath("$.errors.password").isArray())
+                .andExpect(jsonPath("$.errors['" + ValidationExceptionHandler.GLOBAL_ERROR_KEY + "']").isArray());
     }
 
     @Test
@@ -98,7 +98,7 @@ class ValidationExceptionHandlerIntegrationTest {
                         .param("q", "x"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(PresentationErrorCode.CONSTRAINT_VIOLATION.code()))
-                .andExpect(jsonPath("$.data['/search/q']").exists());
+                .andExpect(jsonPath("$.errors['/search/q']").exists());
     }
 
     @Target(ElementType.TYPE)
