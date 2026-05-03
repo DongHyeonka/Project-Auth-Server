@@ -2,6 +2,7 @@ package com.project.auth.presentation.support.exception;
 
 import com.project.auth.application.support.exception.AuthErrorCode;
 import com.project.auth.application.support.exception.BusinessException;
+import com.project.auth.application.support.exception.CommonErrorCode;
 import com.project.auth.application.support.logging.LogSanitizer;
 import com.project.auth.presentation.support.response.ApiResult;
 import com.project.auth.presentation.support.response.ApiResultFactory;
@@ -85,6 +86,35 @@ public class ApplicationExceptionHandler {
                 .body(apiResultFactory.failure(
                         PresentationErrorCode.MESSAGE_NOT_WRITABLE.code(),
                         PresentationErrorCode.MESSAGE_NOT_WRITABLE.message()
+                ));
+    }
+
+    /**
+     * Last-resort handler for any exception type not matched by a more specific
+     * @ExceptionHandler. Without this, unmatched exceptions bypass advice entirely
+     * and fall through to {@code /error}, which returns a generic Spring Boot
+     * payload that violates our {@link ApiResult} contract.
+     *
+     * Always returns 500 + COMMON-999 with a full stack trace at ERROR level so
+     * the unknown failure mode is visible to operators.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResult<Void>> handleUncaughtException(
+            Exception exception,
+            HttpServletRequest request
+    ) {
+        log.error(
+                "Uncaught exception reached @ExceptionHandler safety net. exceptionType={} method={} requestPath={}",
+                exception.getClass().getName(),
+                request.getMethod(),
+                LogSanitizer.normalize(request.getRequestURI()),
+                exception
+        );
+
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INTERNAL_SERVER_ERROR))
+                .body(apiResultFactory.failure(
+                        CommonErrorCode.INTERNAL_SERVER_ERROR.code(),
+                        CommonErrorCode.INTERNAL_SERVER_ERROR.message()
                 ));
     }
 }

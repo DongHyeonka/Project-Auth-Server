@@ -8,8 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -153,6 +157,56 @@ public class RequestExceptionHandler {
                 .body(apiResultFactory.failure(
                         PresentationErrorCode.RESOURCE_NOT_FOUND.code(),
                         PresentationErrorCode.RESOURCE_NOT_FOUND.message()
+                ));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResult<Void>> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException exception
+    ) {
+        log.warn("Upload payload too large. maxBytes={} errorCode={}",
+                exception.getMaxUploadSize(), PresentationErrorCode.PAYLOAD_TOO_LARGE.code());
+
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.PAYLOAD_TOO_LARGE))
+                .body(apiResultFactory.failure(
+                        PresentationErrorCode.PAYLOAD_TOO_LARGE.code(),
+                        PresentationErrorCode.PAYLOAD_TOO_LARGE.message()
+                ));
+    }
+
+    /**
+     * Handles framework-thrown status carriers that aren't already covered by a
+     * more specific handler. Preserves the carried status code so that 4xx vs 5xx
+     * routing decisions made upstream survive to the client.
+     *
+     * Body classification: 5xx collapses to COMMON-999 to avoid leaking internal
+     * categorization, 4xx falls back to UNHANDLED_CLIENT_ERROR so client SDKs can
+     * still distinguish "your request was wrong" from a server-side fault.
+     */
+    @ExceptionHandler({ResponseStatusException.class, ErrorResponseException.class})
+    public ResponseEntity<ApiResult<Void>> handleErrorResponseException(
+            org.springframework.web.ErrorResponse exception
+    ) {
+        HttpStatus carriedStatus = HttpStatus.resolve(exception.getStatusCode().value());
+        if (carriedStatus == null) {
+            carriedStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+
+        if (carriedStatus.is5xxServerError()) {
+            log.error("Framework-thrown 5xx status. status={}", carriedStatus.value(), (Throwable) exception);
+            return ResponseEntity.status(carriedStatus)
+                    .body(apiResultFactory.failure(
+                            com.project.auth.application.support.exception.CommonErrorCode.INTERNAL_SERVER_ERROR.code(),
+                            com.project.auth.application.support.exception.CommonErrorCode.INTERNAL_SERVER_ERROR.message()
+                    ));
+        }
+
+        log.warn("Framework-thrown 4xx status. status={} errorCode={}",
+                carriedStatus.value(), PresentationErrorCode.UNHANDLED_CLIENT_ERROR.code());
+        return ResponseEntity.status(carriedStatus)
+                .body(apiResultFactory.failure(
+                        PresentationErrorCode.UNHANDLED_CLIENT_ERROR.code(),
+                        PresentationErrorCode.UNHANDLED_CLIENT_ERROR.message()
                 ));
     }
 

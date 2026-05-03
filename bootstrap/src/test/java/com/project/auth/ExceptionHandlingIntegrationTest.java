@@ -161,6 +161,37 @@ class ExceptionHandlingIntegrationTest {
     }
 
     @Test
+    void framework_thrown_4xx_status_preserves_status_and_maps_to_unhandled_client_error() throws Exception {
+        mockMvc.perform(get("/test-support/conflict").with(user("user@example.com").roles("USER")))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(PresentationErrorCode.UNHANDLED_CLIENT_ERROR.code()));
+    }
+
+    @Test
+    void framework_thrown_5xx_status_preserves_status_and_collapses_to_common_999() throws Exception {
+        mockMvc.perform(get("/test-support/service-unavailable").with(user("user@example.com").roles("USER")))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.INTERNAL_SERVER_ERROR.code()));
+    }
+
+    @Test
+    void uncaught_runtime_exception_hits_safety_net_and_returns_common_999(
+            CapturedOutput output
+    ) throws Exception {
+        mockMvc.perform(get("/test-support/uncaught").with(user("user@example.com").roles("USER")))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.INTERNAL_SERVER_ERROR.code()));
+
+        assertThat(output).contains("Uncaught exception reached @ExceptionHandler safety net");
+    }
+
+    @Test
     void leaked_domain_exception_falls_back_to_common_999_without_exposing_message() throws Exception {
         mockMvc.perform(get("/test-support/domain").with(user("user@example.com").roles("USER")))
                 .andExpect(status().isInternalServerError())
@@ -218,6 +249,21 @@ class ExceptionHandlingIntegrationTest {
                 @org.springframework.web.bind.annotation.RequestHeader("X-Test-Header") String headerValue
         ) {
             return headerValue;
+        }
+
+        @GetMapping("/test-support/conflict")
+        String frameworkThrown4xx() {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT);
+        }
+
+        @GetMapping("/test-support/service-unavailable")
+        String frameworkThrown5xx() {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
+        @GetMapping("/test-support/uncaught")
+        String uncaughtRuntime() {
+            throw new IllegalStateException("simulated unknown failure");
         }
     }
 

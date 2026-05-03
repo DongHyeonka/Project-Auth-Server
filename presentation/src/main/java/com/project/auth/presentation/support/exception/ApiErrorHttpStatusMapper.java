@@ -32,7 +32,9 @@ public final class ApiErrorHttpStatusMapper {
             case RESOURCE_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case UNSUPPORTED_MEDIA_TYPE -> HttpStatus.UNSUPPORTED_MEDIA_TYPE;
             case NOT_ACCEPTABLE -> HttpStatus.NOT_ACCEPTABLE;
+            case PAYLOAD_TOO_LARGE -> HttpStatus.CONTENT_TOO_LARGE;
             case MESSAGE_NOT_WRITABLE -> HttpStatus.INTERNAL_SERVER_ERROR;
+            case UNHANDLED_CLIENT_ERROR -> HttpStatus.BAD_REQUEST;
         };
     }
 

@@ -13,7 +13,9 @@ public enum PresentationErrorCode implements ClientFacingErrorCode {
     NOT_ACCEPTABLE("PRES-008", "요청한 응답 형식을 제공할 수 없습니다."),
     MISSING_HEADER("PRES-009", "필수 요청 헤더가 누락되었습니다."),
     REQUEST_BINDING_FAILED("PRES-010", "요청 바인딩에 실패했습니다."),
-    MESSAGE_NOT_WRITABLE("PRES-011", "응답 데이터를 처리할 수 없습니다.");
+    MESSAGE_NOT_WRITABLE("PRES-011", "응답 데이터를 처리할 수 없습니다."),
+    PAYLOAD_TOO_LARGE("PRES-012", "요청 본문 크기가 허용 한도를 초과했습니다."),
+    UNHANDLED_CLIENT_ERROR("PRES-013", "처리하지 못한 클라이언트 오류입니다.");
 
     private final String code;
     private final String message;

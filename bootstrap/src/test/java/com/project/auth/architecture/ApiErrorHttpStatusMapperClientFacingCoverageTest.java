@@ -11,7 +11,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpStatus;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,7 +40,9 @@ class ApiErrorHttpStatusMapperClientFacingCoverageTest {
                 Arguments.of(PresentationErrorCode.RESOURCE_NOT_FOUND, HttpStatus.NOT_FOUND),
                 Arguments.of(PresentationErrorCode.UNSUPPORTED_MEDIA_TYPE, HttpStatus.UNSUPPORTED_MEDIA_TYPE),
                 Arguments.of(PresentationErrorCode.NOT_ACCEPTABLE, HttpStatus.NOT_ACCEPTABLE),
-                Arguments.of(PresentationErrorCode.MESSAGE_NOT_WRITABLE, HttpStatus.INTERNAL_SERVER_ERROR)
+                Arguments.of(PresentationErrorCode.PAYLOAD_TOO_LARGE, HttpStatus.CONTENT_TOO_LARGE),
+                Arguments.of(PresentationErrorCode.MESSAGE_NOT_WRITABLE, HttpStatus.INTERNAL_SERVER_ERROR),
+                Arguments.of(PresentationErrorCode.UNHANDLED_CLIENT_ERROR, HttpStatus.BAD_REQUEST)
         );
     }
 
@@ -81,13 +82,12 @@ class ApiErrorHttpStatusMapperClientFacingCoverageTest {
 
     @Test
     void all_client_facing_error_codes_have_unique_string_codes() {
-        Stream<ClientFacingErrorCode> all = Stream.of(
-                Arrays.stream(CommonErrorCode.values()),
-                Arrays.stream(AuthErrorCode.values()),
-                Arrays.stream(PresentationErrorCode.values())
-        ).flatMap(s -> s);
+        List<ClientFacingErrorCode> all = new java.util.ArrayList<>();
+        all.addAll(List.of(CommonErrorCode.values()));
+        all.addAll(List.of(AuthErrorCode.values()));
+        all.addAll(List.of(PresentationErrorCode.values()));
 
-        List<String> codes = all.map(ClientFacingErrorCode::code).toList();
+        List<String> codes = all.stream().map(ClientFacingErrorCode::code).toList();
 
         assertThat(codes)
                 .as("ClientFacingErrorCode.code() values must be unique across enums to avoid client-side ambiguity")
