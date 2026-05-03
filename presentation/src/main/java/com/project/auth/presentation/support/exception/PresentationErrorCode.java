@@ -15,7 +15,9 @@ public enum PresentationErrorCode implements ClientFacingErrorCode {
     REQUEST_BINDING_FAILED("PRES-010", "요청 바인딩에 실패했습니다."),
     MESSAGE_NOT_WRITABLE("PRES-011", "응답 데이터를 처리할 수 없습니다."),
     PAYLOAD_TOO_LARGE("PRES-012", "요청 본문 크기가 허용 한도를 초과했습니다."),
-    UNHANDLED_CLIENT_ERROR("PRES-013", "처리하지 못한 클라이언트 오류입니다.");
+    UNHANDLED_CLIENT_ERROR("PRES-013", "처리하지 못한 클라이언트 오류입니다."),
+    TYPE_MISMATCH("PRES-014", "요청 파라미터 타입이 올바르지 않습니다."),
+    INVALID_PARAMETER("PRES-015", "요청 파라미터 검증에 실패했습니다.");
 
     private final String code;
     private final String message;

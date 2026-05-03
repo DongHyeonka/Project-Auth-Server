@@ -115,10 +115,10 @@ public class ValidationExceptionHandler {
 
         log.warn("Handler method validation failed: {}", errors);
 
-        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.INVALID_INPUT))
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(PresentationErrorCode.INVALID_PARAMETER))
                 .body(apiResultFactory.failure(
-                        PresentationErrorCode.INVALID_INPUT.code(),
-                        PresentationErrorCode.INVALID_INPUT.message(),
+                        PresentationErrorCode.INVALID_PARAMETER.code(),
+                        PresentationErrorCode.INVALID_PARAMETER.message(),
                         errors
                 ));
     }

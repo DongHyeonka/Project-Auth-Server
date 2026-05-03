@@ -11,6 +11,12 @@ import java.util.Objects;
 public class RequestBoundApiResultFactory implements ApiResultFactory {
 
     private static final String TRACE_ID_KEY = "traceId";
+    /**
+     * Sentinel emitted when MDC has no traceId. A literal placeholder is more visible
+     * in logs and dashboards than a JSON {@code null}, which would otherwise mask the
+     * fact that TraceIdFilter is missing or misconfigured.
+     */
+    static final String MISSING_TRACE_ID = "-";
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
     private final Clock clock;
@@ -40,12 +46,13 @@ public class RequestBoundApiResultFactory implements ApiResultFactory {
     }
 
     private <T> ApiResult<T> result(boolean success, String code, String message, T data) {
+        String traceId = MDC.get(TRACE_ID_KEY);
         return new ApiResult<>(
                 success,
                 code,
                 message,
                 data,
-                MDC.get(TRACE_ID_KEY),
+                traceId == null || traceId.isBlank() ? MISSING_TRACE_ID : traceId,
                 TIMESTAMP_FORMATTER.format(clock.instant())
         );
     }

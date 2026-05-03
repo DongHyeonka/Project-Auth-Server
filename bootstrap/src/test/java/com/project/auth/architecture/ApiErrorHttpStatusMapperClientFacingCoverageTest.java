@@ -42,7 +42,9 @@ class ApiErrorHttpStatusMapperClientFacingCoverageTest {
                 Arguments.of(PresentationErrorCode.NOT_ACCEPTABLE, HttpStatus.NOT_ACCEPTABLE),
                 Arguments.of(PresentationErrorCode.PAYLOAD_TOO_LARGE, HttpStatus.CONTENT_TOO_LARGE),
                 Arguments.of(PresentationErrorCode.MESSAGE_NOT_WRITABLE, HttpStatus.INTERNAL_SERVER_ERROR),
-                Arguments.of(PresentationErrorCode.UNHANDLED_CLIENT_ERROR, HttpStatus.BAD_REQUEST)
+                Arguments.of(PresentationErrorCode.UNHANDLED_CLIENT_ERROR, HttpStatus.BAD_REQUEST),
+                Arguments.of(PresentationErrorCode.TYPE_MISMATCH, HttpStatus.BAD_REQUEST),
+                Arguments.of(PresentationErrorCode.INVALID_PARAMETER, HttpStatus.BAD_REQUEST)
         );
     }
 

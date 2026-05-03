@@ -34,10 +34,11 @@ public class ApplicationExceptionHandler {
             HttpServletRequest request
     ) {
         log.warn(
-                "Business exception. errorCode={} method={} requestPath={}",
+                "Business exception. exceptionType={} errorCode={} method={} requestPath={}",
+                exception.getClass().getSimpleName(),
                 exception.getErrorCode().code(),
                 request.getMethod(),
-                LogSanitizer.normalize(request.getRequestURI())
+                LogSanitizer.requestPath(request.getRequestURI())
         );
 
         return ResponseEntity.status(ApiErrorHttpStatusMapper.map(exception.getErrorCode()))
@@ -67,7 +68,7 @@ public class ApplicationExceptionHandler {
                 "Response body not writable. committed={} method={} requestPath={}",
                 response.isCommitted(),
                 request.getMethod(),
-                LogSanitizer.normalize(request.getRequestURI()),
+                LogSanitizer.requestPath(request.getRequestURI()),
                 exception
         );
 
@@ -100,7 +101,7 @@ public class ApplicationExceptionHandler {
                 "Uncaught exception reached @ExceptionHandler safety net. exceptionType={} method={} requestPath={}",
                 exception.getClass().getName(),
                 request.getMethod(),
-                LogSanitizer.normalize(request.getRequestURI()),
+                LogSanitizer.requestPath(request.getRequestURI()),
                 exception
         );
 

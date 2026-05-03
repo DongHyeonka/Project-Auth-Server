@@ -27,7 +27,7 @@ public final class ApiErrorHttpStatusMapper {
 
     private static HttpStatus mapPresentation(PresentationErrorCode errorCode) {
         return switch (errorCode) {
-            case INVALID_INPUT, INVALID_REQUEST_BODY, MISSING_PARAMETER, CONSTRAINT_VIOLATION, MISSING_HEADER, REQUEST_BINDING_FAILED -> HttpStatus.BAD_REQUEST;
+            case INVALID_INPUT, INVALID_REQUEST_BODY, MISSING_PARAMETER, CONSTRAINT_VIOLATION, MISSING_HEADER, REQUEST_BINDING_FAILED, TYPE_MISMATCH, INVALID_PARAMETER -> HttpStatus.BAD_REQUEST;
             case METHOD_NOT_ALLOWED -> HttpStatus.METHOD_NOT_ALLOWED;
             case RESOURCE_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case UNSUPPORTED_MEDIA_TYPE -> HttpStatus.UNSUPPORTED_MEDIA_TYPE;
