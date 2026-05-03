@@ -59,7 +59,7 @@ public class ValidationExceptionHandler {
     ) {
         Map<String, List<String>> errors = new LinkedHashMap<>();
         for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
-            errors.computeIfAbsent(fieldError.getField(), k -> new ArrayList<>())
+            errors.computeIfAbsent(fieldFieldToJsonPointer(fieldError.getField()), k -> new ArrayList<>())
                     .add(resolveMessage(fieldError.getDefaultMessage(), fieldError.getCode()));
         }
         for (ObjectError globalError : exception.getBindingResult().getGlobalErrors()) {
@@ -108,9 +108,9 @@ public class ValidationExceptionHandler {
             String paramName = result.getMethodParameter().getParameterName();
             String key;
             if (paramName != null) {
-                key = paramName;
+                key = fieldFieldToJsonPointer(paramName);
             } else {
-                key = "unknown_" + result.getMethodParameter().getParameterIndex();
+                key = fieldFieldToJsonPointer("unknown_" + result.getMethodParameter().getParameterIndex());
                 unnamedCounter++;
             }
             for (MessageSourceResolvable error : result.getResolvableErrors()) {
@@ -164,6 +164,57 @@ public class ValidationExceptionHandler {
 
     private static String escapeJsonPointerSegment(String segment) {
         return segment.replace("~", "~0").replace("/", "~1");
+    }
+
+    /**
+     * Spring {@code BindingResult.FieldError#getField()} 형식(예: {@code user.email},
+     * {@code items[0].name})을 JSON Pointer(RFC 6901)로 변환한다.
+     * ConstraintViolationException 핸들러와 키 형식을 통일하여, 응답 errors 맵의 키 규약을
+     * 단일화한다(클라이언트가 두 가지 형식을 분기 처리할 필요가 없게 한다).
+     */
+    private static String fieldFieldToJsonPointer(String field) {
+        if (field == null || field.isEmpty()) {
+            return "/";
+        }
+        StringBuilder builder = new StringBuilder();
+        int index = 0;
+        int length = field.length();
+        while (index < length) {
+            char ch = field.charAt(index);
+            if (ch == '.') {
+                index++;
+                continue;
+            }
+            if (ch == '[') {
+                int end = field.indexOf(']', index);
+                if (end == -1) {
+                    builder.append('/').append(escapeJsonPointerSegment(field.substring(index)));
+                    break;
+                }
+                builder.append('/').append(escapeJsonPointerSegment(field.substring(index + 1, end)));
+                index = end + 1;
+                continue;
+            }
+            int nextDot = field.indexOf('.', index);
+            int nextBracket = field.indexOf('[', index);
+            int next = minNonNegative(nextDot, nextBracket);
+            if (next == -1) {
+                next = length;
+            }
+            builder.append('/').append(escapeJsonPointerSegment(field.substring(index, next)));
+            index = next;
+        }
+        return builder.length() == 0 ? "/" : builder.toString();
+    }
+
+    private static int minNonNegative(int a, int b) {
+        if (a < 0) {
+            return b;
+        }
+        if (b < 0) {
+            return a;
+        }
+        return Math.min(a, b);
     }
 
     private static String resolveMessage(String defaultMessage, String fallbackCode) {

@@ -87,7 +87,7 @@ class ValidationExceptionHandlerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors.password").isArray())
+                .andExpect(jsonPath("$.errors['/password']").isArray())
                 .andExpect(jsonPath("$.errors['" + ValidationExceptionHandler.GLOBAL_ERROR_KEY + "']").isArray());
     }
 
