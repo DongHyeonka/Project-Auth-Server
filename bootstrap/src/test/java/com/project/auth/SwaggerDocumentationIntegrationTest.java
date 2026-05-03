@@ -19,7 +19,7 @@ class SwaggerDocumentationIntegrationTest {
     private int port;
 
     @Test
-    void openApiDocsExposeUserSignUpEndpoint() throws IOException, InterruptedException {
+    void openApiDocsExposeAuthenticatedUserEndpoint() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + port + "/v3/api-docs"))
                 .GET()
@@ -29,11 +29,8 @@ class SwaggerDocumentationIntegrationTest {
                 .send(request, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.body()).contains("/api/v1/users/signup");
-        assertThat(response.body()).contains("/api/v1/auth/login");
-        assertThat(response.body()).contains("/api/v1/auth/oauth2/keycloak/google");
-        assertThat(response.body()).contains("/api/v1/auth/oauth2/keycloak/github");
-        assertThat(response.body()).contains("회원가입");
-        assertThat(response.body()).contains("로그인");
+        assertThat(response.body()).contains("/api/v1/auth/me");
+        assertThat(response.body()).contains("현재 사용자 조회");
+        assertThat(response.body()).doesNotContain("/api/v1/users/signup");
     }
 }

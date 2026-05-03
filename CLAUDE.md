@@ -20,8 +20,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Boot the application (local profile with H2)
 ./gradlew :bootstrap:bootRun
 
-# Build Docker images (bootJar + migrationBootJar)
-./gradlew :bootstrap:bootJar :bootstrap:migrationBootJar
+# Build executable jar
+./gradlew :bootstrap:bootJar
+
+# Build migration job jar
+./gradlew :bootstrap:migrationBootJar
+
+# Build Docker image
+docker build -f deploy/docker/application/Dockerfile -t project-auth-server:local .
 ```
 
 Modules: `domain`, `application`, `presentation`, `infrastructure`, `bootstrap`.
@@ -48,9 +54,9 @@ Use cases define **port interfaces** (e.g., `LoginUseCase` as in-port, `LoadLogi
 - **Application**: throws `BusinessException` with `ErrorCode` (code + message only, no HTTP status)
 - **Presentation**: `GlobalExceptionHandler` catches exceptions; `ApiErrorHttpStatusMapper` maps `ErrorCode` → HTTP status; responses wrapped in `ApiResult<T>`
 
-### Separate migration entry point
+### Database migrations
 
-`MigrationApplication` (in `com.project.authmigration`) runs Flyway migrations without loading the web context. Migrations live in `infrastructure/src/main/resources/db/migration/`.
+Flyway SQL migrations live in `infrastructure/src/main/resources/db/migration/`. In K8s they are run as an `initContainer` using the official `flyway/flyway` image — there is no in-repo migration entry point or migration image.
 
 ## Tech Stack
 

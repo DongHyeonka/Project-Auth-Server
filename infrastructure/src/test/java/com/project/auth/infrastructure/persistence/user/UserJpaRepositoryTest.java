@@ -79,35 +79,41 @@ class UserJpaRepositoryTest {
     }
 
     @Test
-    void savePersistsLocalUserAndReloadsFromDatabase() {
-        User user = localUser("11111111-1111-1111-1111-111111111111", "tester@example.com");
+    void savePersistsKeycloakUserAndReloadsFromDatabase() {
+        User user = keycloakUser(
+                "11111111-1111-1111-1111-111111111111",
+                "tester@example.com",
+                "keycloak-subject-1"
+        );
 
         adapter.save(user);
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(userJpaRepository.findByEmail("tester@example.com"))
+        assertThat(userJpaRepository.findByProviderAndProviderSubject(AuthProvider.KEYCLOAK, "keycloak-subject-1"))
                 .isPresent()
                 .get()
                 .satisfies(entity -> {
                     assertThat(entity.getEmail()).isEqualTo("tester@example.com");
-                    assertThat(entity.getProvider()).isEqualTo(AuthProvider.LOCAL);
-                    assertThat(entity.getCreatedAt()).isEqualTo(Instant.parse("2026-03-14T00:00:00Z"));
+                    assertThat(entity.getProvider()).isEqualTo(AuthProvider.KEYCLOAK);
+                    assertThat(entity.getCreatedAt()).isEqualTo(Instant.parse("2026-04-17T00:00:00Z"));
                 });
     }
 
     @Test
     void saveRejectsDuplicateEmailOnFlush() {
-        userJpaRepository.save(localEntity(
+        userJpaRepository.save(keycloakEntity(
                 "11111111-1111-1111-1111-111111111111",
-                "duplicate@example.com"
+                "duplicate@example.com",
+                "keycloak-subject-1"
         ));
         userJpaRepository.flush();
         entityManager.clear();
 
-        userJpaRepository.save(localEntity(
+        userJpaRepository.save(keycloakEntity(
                 "22222222-2222-2222-2222-222222222222",
-                "duplicate@example.com"
+                "duplicate@example.com",
+                "keycloak-subject-2"
         ));
 
         assertThatThrownBy(() -> userJpaRepository.flush())
@@ -115,60 +121,43 @@ class UserJpaRepositoryTest {
     }
 
     @Test
-    void saveRejectsLocalUserWithoutPasswordOnFlush() {
-        UserJpaEntity invalidLocalUser = UserJpaEntity.of(
-                UUID.fromString("11111111-1111-1111-1111-111111111111"),
-                "local-without-password@example.com",
-                null,
-                "테스터",
-                AuthProvider.LOCAL,
-                null,
-                Instant.parse("2026-03-14T00:00:00Z")
-        );
+    void saveRejectsDuplicateProviderSubjectOnFlush() {
+        userJpaRepository.save(keycloakEntity(
+                "11111111-1111-1111-1111-111111111111",
+                "first@example.com",
+                "keycloak-subject-1"
+        ));
+        userJpaRepository.flush();
+        entityManager.clear();
 
-        userJpaRepository.save(invalidLocalUser);
-
-        assertThatThrownBy(() -> userJpaRepository.flush())
-                .isInstanceOf(DataIntegrityViolationException.class);
-    }
-
-    @Test
-    void saveRejectsSocialUserWithoutProviderSubjectOnFlush() {
-        UserJpaEntity invalidSocialUser = UserJpaEntity.of(
-                UUID.fromString("11111111-1111-1111-1111-111111111111"),
-                "social-without-subject@example.com",
-                null,
-                "테스터",
-                AuthProvider.GOOGLE,
-                null,
-                Instant.parse("2026-03-14T00:00:00Z")
-        );
-
-        userJpaRepository.save(invalidSocialUser);
+        userJpaRepository.save(keycloakEntity(
+                "22222222-2222-2222-2222-222222222222",
+                "second@example.com",
+                "keycloak-subject-1"
+        ));
 
         assertThatThrownBy(() -> userJpaRepository.flush())
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    private static User localUser(String id, String email) {
-        return User.registerLocal(
+    private static User keycloakUser(String id, String email, String providerSubject) {
+        return User.registerKeycloak(
                 UUID.fromString(id),
                 UserEmail.from(email),
-                "encoded-password123",
                 UserName.from("테스터"),
-                Instant.parse("2026-03-14T00:00:00Z")
+                providerSubject,
+                Instant.parse("2026-04-17T00:00:00Z")
         );
     }
 
-    private static UserJpaEntity localEntity(String id, String email) {
+    private static UserJpaEntity keycloakEntity(String id, String email, String providerSubject) {
         return UserJpaEntity.of(
                 UUID.fromString(id),
                 email,
-                "encoded-password123",
                 "테스터",
-                AuthProvider.LOCAL,
-                null,
-                Instant.parse("2026-03-14T00:00:00Z")
+                AuthProvider.KEYCLOAK,
+                providerSubject,
+                Instant.parse("2026-04-17T00:00:00Z")
         );
     }
 

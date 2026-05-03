@@ -91,11 +91,15 @@ jobs:
         uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           context: .
-          file: ./deploy/docker/Dockerfile
+          file: ./deploy/docker/application/Dockerfile
           push: true
           tags: |
             ${{ steps.image-meta.outputs.image_name }}:dev
             ${{ steps.image-meta.outputs.image_name }}:${{ steps.image-meta.outputs.image_tag }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VERSION=${{ steps.image-meta.outputs.image_tag }}
           cache-from: type=gha,scope=project-auth-server-dev-image
           cache-to: type=gha,mode=max,scope=project-auth-server-dev-image
 

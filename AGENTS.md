@@ -66,15 +66,12 @@ Before editing:
 - identify whether exception mapping, transaction scope, query shape, or docs must change
 
 After code work — documentation cycle:
-1. identify whether the change involves a design decision, troubleshooting, or architectural insight worth recording
-2. if yes, write the topic document first in `/docs/topics/<nn-topic>/` following the relevant template from `/docs/templates/`
+1. identify whether the change involves an architectural decision (ADR) or troubleshooting / runbook worth recording
+2. if yes, write the topic document in `/docs/topics/<nn-topic>/` following the relevant template from `/docs/templates/`
 3. update the topic's `README.md` index
-4. if the content is suitable for external publication (troubleshooting, ADR, architecture overview), create a publish draft in `/docs/publish/` using `/docs/templates/velog-post-template.md`
-5. update `/docs/publish/README.md` with the new draft entry
-6. follow `/docs/documentation-guide.md` for writing standards (Why → What → How → Result)
+4. follow `/docs/documentation-guide.md` for writing standards (Why → What → How → Result)
 
 Documentation routing:
 - writing standards / structure / checklist -> `/docs/documentation-guide.md`
-- topic deep-dive documents -> `/docs/topics/`
-- external publication drafts -> `/docs/publish/`
+- topic ADR + troubleshooting / runbook -> `/docs/topics/`
 - reusable templates -> `/docs/templates/`

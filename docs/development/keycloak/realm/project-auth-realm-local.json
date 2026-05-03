@@ -20,8 +20,8 @@
       "serviceAccountsEnabled": false,
       "baseUrl": "http://localhost:8080",
       "redirectUris": [
-        "http://localhost:8080/login/oauth2/code/keycloak-google",
-        "http://localhost:8080/login/oauth2/code/keycloak-github"
+        "http://localhost:3000/*",
+        "http://localhost:8080/*"
       ],
       "webOrigins": [
         "http://localhost:8080"

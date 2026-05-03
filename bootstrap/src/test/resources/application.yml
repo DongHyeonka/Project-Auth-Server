@@ -13,35 +13,9 @@ spring:
         default_schema: auth
   security:
     oauth2:
-      client:
-        provider:
-          keycloak:
-            authorization-uri: http://localhost:8180/realms/test/protocol/openid-connect/auth
-            token-uri: http://localhost:8180/realms/test/protocol/openid-connect/token
-            jwk-set-uri: http://localhost:8180/realms/test/protocol/openid-connect/certs
-            user-info-uri: http://localhost:8180/realms/test/protocol/openid-connect/userinfo
-            user-name-attribute: sub
-        registration:
-          keycloak-google:
-            provider: keycloak
-            client-id: test-client
-            client-secret: test-secret
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope:
-              - openid
-              - profile
-              - email
-          keycloak-github:
-            provider: keycloak
-            client-id: test-client
-            client-secret: test-secret
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope:
-              - openid
-              - profile
-              - email
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/test
 
 app:
   docs:
@@ -52,14 +26,3 @@ app:
     migration:
       location: classpath:db/migration
       schema: auth
-  security:
-    jwt:
-      issuer: http://localhost:8080
-      active-key-id: test-rsa-key-1
-      generate-key-pair-on-startup: true
-      access-token-expiration: PT30M
-    oauth2:
-      google-registration-id: keycloak-google
-      google-idp-hint: google
-      github-registration-id: keycloak-github
-      github-idp-hint: github

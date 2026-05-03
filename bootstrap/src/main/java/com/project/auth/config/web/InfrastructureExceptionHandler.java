@@ -1,7 +1,8 @@
 package com.project.auth.config.web;
 
 import com.project.auth.application.support.exception.CommonErrorCode;
-import com.project.auth.config.logging.LogSanitizer;
+import com.project.auth.application.support.logging.LogSanitizer;
+import com.project.auth.domain.user.exception.DomainException;
 import com.project.auth.infrastructure.support.exception.InfrastructureException;
 import com.project.auth.presentation.support.exception.ApiErrorHttpStatusMapper;
 import com.project.auth.presentation.support.response.ApiResult;
@@ -41,6 +42,25 @@ public class InfrastructureExceptionHandler {
         log.error(
                 "Infrastructure failure. errorCode={} method={} requestPath={}",
                 exception.getErrorCode().code(),
+                request.getMethod(),
+                LogSanitizer.requestPath(request.getRequestURI()),
+                exception
+        );
+
+        return ResponseEntity.status(ApiErrorHttpStatusMapper.map(CommonErrorCode.INTERNAL_SERVER_ERROR))
+                .body(apiResultFactory.failure(
+                        CommonErrorCode.INTERNAL_SERVER_ERROR.code(),
+                        CommonErrorCode.INTERNAL_SERVER_ERROR.message()
+                ));
+    }
+
+    @ExceptionHandler(DomainException.class)
+    public ResponseEntity<ApiResult<Void>> handleLeakedDomainException(
+            DomainException exception,
+            HttpServletRequest request
+    ) {
+        log.error(
+                "Leaked domain exception. method={} requestPath={}",
                 request.getMethod(),
                 LogSanitizer.requestPath(request.getRequestURI()),
                 exception

@@ -85,4 +85,13 @@ class LayerDependencyArchitectureTest {
                             "com.project.auth.infrastructure.."
                     )
                     .should().dependOnClassesThat().resideInAnyPackage("com.project.auth.config..");
+
+    @ArchTest
+    static final ArchRule internal_packages_are_hidden_from_other_modules =
+            noClasses()
+                    .that().resideOutsideOfPackage("..internal..")
+                        .and().resideOutsideOfPackage("com.project.auth.config..")
+                    .should().dependOnClassesThat().resideInAPackage("..internal..")
+                    .because("internal 서브패키지는 같은 모듈 내부에서만 참조되어야 하며, "
+                            + "bootstrap(com.project.auth.config)만 wiring 목적으로 예외 허용");
 }

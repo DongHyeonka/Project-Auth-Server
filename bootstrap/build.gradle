@@ -1,5 +1,5 @@
-import org.springframework.boot.gradle.tasks.bundling.BootJar
 import org.gradle.api.JavaVersion
+import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 dependencies {
     implementation project(':application')
@@ -8,7 +8,7 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     implementation 'org.springframework.security:spring-security-oauth2-jose'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation libs.springdoc.openapi.webmvc.ui
@@ -20,11 +20,18 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'jakarta.servlet:jakarta.servlet-api'
+    testImplementation 'jakarta.persistence:jakarta.persistence-api'
     testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'
+    testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
+    testImplementation 'org.testcontainers:postgresql:1.20.4'
+    testImplementation 'org.flywaydb:flyway-core'
     testImplementation project(':domain')
     testRuntimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'org.postgresql:postgresql'
+    testRuntimeOnly 'org.flywaydb:flyway-database-postgresql'
 }
 
 tasks.register("migrationBootJar", BootJar) {

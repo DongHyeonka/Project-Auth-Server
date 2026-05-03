@@ -8,7 +8,6 @@ public final class User {
 
     private final UUID id;
     private final UserEmail email;
-    private final EncodedPassword encodedPassword;
     private final UserName name;
     private final AuthProvider provider;
     private final ProviderSubject providerSubject;
@@ -17,7 +16,6 @@ public final class User {
     private User(
             UUID id,
             UserEmail email,
-            EncodedPassword encodedPassword,
             UserName name,
             AuthProvider provider,
             ProviderSubject providerSubject,
@@ -27,50 +25,29 @@ public final class User {
         this.email = Objects.requireNonNull(email, "email must not be null");
         this.name = Objects.requireNonNull(name, "name must not be null");
         this.provider = Objects.requireNonNull(provider, "provider must not be null");
-        this.encodedPassword = encodedPassword;
-        this.providerSubject = providerSubject;
+        this.providerSubject = Objects.requireNonNull(providerSubject, "providerSubject must not be null");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
     }
 
-    public static User registerLocal(
-            UUID id,
-            UserEmail email,
-            String encodedPassword,
-            UserName name,
-            Instant createdAt
-    ) {
-        return new User(id, email, EncodedPassword.from(encodedPassword), name, AuthProvider.LOCAL, null, createdAt);
-    }
-
-    public static User registerSocial(
+    public static User registerKeycloak(
             UUID id,
             UserEmail email,
             UserName name,
-            AuthProvider provider,
             String providerSubject,
             Instant createdAt
     ) {
-        if (provider == AuthProvider.LOCAL) {
-            throw new IllegalArgumentException("Social registration cannot use LOCAL provider.");
-        }
-
-        return new User(id, email, null, name, provider, ProviderSubject.from(providerSubject), createdAt);
+        return new User(id, email, name, AuthProvider.KEYCLOAK, ProviderSubject.from(providerSubject), createdAt);
     }
 
     public static User restore(
             UUID id,
             UserEmail email,
-            String encodedPassword,
             UserName name,
             AuthProvider provider,
             String providerSubject,
             Instant createdAt
     ) {
-        if (provider == AuthProvider.LOCAL) {
-            return new User(id, email, EncodedPassword.from(encodedPassword), name, provider, null, createdAt);
-        }
-
-        return new User(id, email, null, name, provider, ProviderSubject.from(providerSubject), createdAt);
+        return new User(id, email, name, provider, ProviderSubject.from(providerSubject), createdAt);
     }
 
     public UUID getId() {
@@ -79,10 +56,6 @@ public final class User {
 
     public String getEmail() {
         return email.value();
-    }
-
-    public String getEncodedPassword() {
-        return encodedPassword == null ? null : encodedPassword.value();
     }
 
     public String getName() {
@@ -94,7 +67,7 @@ public final class User {
     }
 
     public String getProviderSubject() {
-        return providerSubject == null ? null : providerSubject.value();
+        return providerSubject.value();
     }
 
     public Instant getCreatedAt() {

@@ -19,7 +19,6 @@ server:
     remoteip:
       internal-proxies: '${SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES:10\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|172\.(1[6-9]|2[0-9]|3[0-1])\.[0-9]+\.[0-9]+|127\.[0-9]+\.[0-9]+\.[0-9]+}'
 
-logging:
 app:
   docs:
     title: ${APP_DOCS_TITLE:Project Auth Server API}
@@ -38,18 +37,11 @@ app:
         - /readyz
         - /swagger-ui
         - /v3/api-docs
-        - /auth-login.html
         - /favicon.ico
   persistence:
     migration:
       location: ${APP_PERSISTENCE_MIGRATION_LOCATION:classpath:db/migration}
       schema: ${APP_PERSISTENCE_MIGRATION_SCHEMA:auth}
-  security:
-    oauth2:
-      google-registration-id: ${APP_SECURITY_OAUTH2_GOOGLE_REGISTRATION_ID:keycloak-google}
-      google-idp-hint: ${APP_SECURITY_OAUTH2_GOOGLE_IDP_HINT:google}
-      github-registration-id: ${APP_SECURITY_OAUTH2_GITHUB_REGISTRATION_ID:keycloak-github}
-      github-idp-hint: ${APP_SECURITY_OAUTH2_GITHUB_IDP_HINT:github}
 
 springdoc:
   swagger-ui:
