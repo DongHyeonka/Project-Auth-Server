@@ -320,6 +320,9 @@ project(':application') {
                 'com.project.auth.application.support.exception.*',
                 'com.project.auth.application.support.logging.*'
         ]
+        // Tier 1 PIT 임계치(85~95%) 통과 확인 후 게이트 활성화. 현재 측정값 ≈ 94%.
+        mutationThreshold = 90
+        coverageThreshold = 90
     }
 }
 
@@ -329,6 +332,10 @@ project(':presentation') {
                 'com.project.auth.presentation.support.exception.*',
                 'com.project.auth.presentation.support.response.*'
         ]
+        // 단위 테스트 추가 후 measured ≈ 79%. 현실적 마진 두고 75% 게이트.
+        // Tier 1 목표 85%까지는 후속 작업으로 살아남은 변이 분석/제거.
+        mutationThreshold = 75
+        coverageThreshold = 90
     }
 }
 

@@ -92,12 +92,14 @@
 ### 즉시 적용 (현재)
 - **PR 게이트**: `./gradlew coverageGate` — 명시적 호출 시에만 실행. CI에서 PR마다 자동 호출.
 - **임계치**: build.gradle의 `jacocoTestCoverageVerification`에 모듈별로 표현됨.
-- **PIT는 baseline만**: `./gradlew mutationBaseline` — 점수만 기록, 게이트 활성화는 6개월 후 검토.
+- **PIT 게이트**: 활성화 완료 (2026-05-04). `./gradlew :application:pitest`, `:presentation:pitest`가 임계치 미달 시 빌드 실패한다.
+  - application: `mutationThreshold = 90`, `coverageThreshold = 90` (현재 측정 ≈ 94%)
+  - presentation: `mutationThreshold = 75`, `coverageThreshold = 90` (현재 측정 ≈ 77%)
 
 ### 6개월 후 (점진 상향)
 - Tier 2 PIT 임계치 +5%p
 - Tier 3 라인 +5%p
-- PIT mutation 점수 게이트(Tier 1: 85%+)
+- presentation PIT mutationThreshold를 80~85%로 상향 (살아남은 변이 분석 후)
 
 ### 절대 금지
 - 테스트 클래스에서 `@SuppressWarnings("...")`로 게이트 우회
