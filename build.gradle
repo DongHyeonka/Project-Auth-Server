@@ -300,10 +300,9 @@ configure([project(':application'), project(':presentation'), project(':bootstra
                 'org.slf4j',
                 'java.util.logging'
         ]
-        // 시작은 baseline 측정. 게이트 도입은 후속 PR에서:
-        //   mutationThreshold  = 70   (Tier 1은 별도 PR에서 85+로 상향)
-        //   coverageThreshold  = 80
-        //   timeoutFactor      = 1.5
+        // 동적 프록시 기반 단위 테스트가 PIT 기본 timeout(10s)에 걸리는 사례가 있어 여유를 둔다.
+        timeoutFactor = 2.0
+        timeoutConstInMillis = 15000
     }
 }
 
@@ -360,17 +359,16 @@ project(':bootstrap') {
 tasks.register('coverageGate') {
     group = 'verification'
     description = 'Run JaCoCo coverage verification across all modules.'
-    dependsOn subprojects.collect { ":${it.name}:jacocoTestCoverageVerification" }
+    subprojects.each { sub ->
+        dependsOn ":${sub.name}:jacocoTestCoverageVerification"
+    }
 }
 
 tasks.register('mutationBaseline') {
     group = 'verification'
     description = 'Run PIT mutation testing on declared target classes (baseline; no threshold).'
     // domain은 현재 wrapper 예외만 있어 변이가 생성되지 않으므로 제외 — 도메인 모델이 자라면 추가.
-    dependsOn [
-            ':application:pitest',
-            ':presentation:pitest'
-    ]
+    dependsOn ':application:pitest', ':presentation:pitest'
 }
 
 // =============================================================
@@ -484,7 +482,7 @@ tasks.register('jacocoAggregateReport', JacocoReport) {
     group = 'verification'
     description = 'Combine JaCoCo execution data from every subproject into a single aggregated report.'
 
-    dependsOn subprojects.collect { ":${it.name}:test" }
+    subprojects.each { sub -> dependsOn ":${sub.name}:test" }
 
     def coveredProjects = subprojects.findAll { it.plugins.hasPlugin('jacoco') }
 
