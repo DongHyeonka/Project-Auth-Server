@@ -103,6 +103,10 @@ class ApiErrorHttpStatusMapperClientFacingCoverageTest {
                 if (reflected.equals(ClientFacingErrorCode.class)) {
                     continue;
                 }
+                // 테스트 안에서 default 분기를 트리거하기 위해 만든 익명/내부 구현체는 가드 대상이 아니다.
+                if (reflected.getName().contains("Test$") || reflected.isAnonymousClass()) {
+                    continue;
+                }
                 implementations.add(reflected);
             }
         }
@@ -119,6 +123,16 @@ class ApiErrorHttpStatusMapperClientFacingCoverageTest {
                         + "at least one entry to exactMappings(). Uncovered types fall through the mapper's "
                         + "non-sealed default branch and silently 500.")
                 .isEmpty();
+    }
+
+    @Test
+    void unmapped_client_facing_error_code_implementation_falls_back_to_500() {
+        // 매퍼의 default 분기를 명시적으로 트리거 — non-sealed marker라 이런 구현이 가능하다.
+        ClientFacingErrorCode unknown = new ClientFacingErrorCode() {
+            @Override public String code() { return "UNKNOWN-001"; }
+            @Override public String message() { return "unknown"; }
+        };
+        assertThat(ApiErrorHttpStatusMapper.map(unknown)).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Test
