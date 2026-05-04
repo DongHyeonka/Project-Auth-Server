@@ -359,3 +359,68 @@ tasks.register('mutationBaseline') {
             ':presentation:pitest'
     ]
 }
+
+// =============================================================
+// 커버리지 리포트 영구 보관
+//   ./gradlew archiveCoverageReport
+// 매 측정 시 coverage-history/{타임스탬프-라벨}/{모듈}/ 아래로 JaCoCo + PIT 리포트를
+// 통째로 복사한다. 회귀 추적용 — 이전 시점 리포트를 git 충돌 없이 보관 가능.
+//
+// 라벨 부여:
+//   ./gradlew archiveCoverageReport -Plabel=before-jqwik
+// 라벨을 주지 않으면 짧은 git SHA가 자동 사용된다.
+// =============================================================
+tasks.register('archiveCoverageReport') {
+    group = 'verification'
+    description = 'Snapshot JaCoCo + PIT reports into coverage-history/{timestamp-label}/ for regression tracking.'
+
+    doLast {
+        String timestamp = new Date().format('yyyyMMdd-HHmmss')
+        String label
+        if (project.hasProperty('label')) {
+            label = project.property('label')
+        } else {
+            try {
+                label = ['git', 'rev-parse', '--short', 'HEAD'].execute(null, rootDir).text.trim()
+            } catch (Exception ignored) {
+                label = 'unlabeled'
+            }
+        }
+        File destinationRoot = new File(rootDir, "coverage-history/${timestamp}-${label}")
+        destinationRoot.mkdirs()
+
+        subprojects.each { sub ->
+            File jacocoSrc = new File(sub.buildDir, 'reports/jacoco/test')
+            if (jacocoSrc.exists()) {
+                File jacocoDst = new File(destinationRoot, "${sub.name}/jacoco")
+                copy {
+                    from jacocoSrc
+                    into jacocoDst
+                }
+            }
+            File pitestSrc = new File(sub.buildDir, 'reports/pitest')
+            if (pitestSrc.exists()) {
+                File pitestDst = new File(destinationRoot, "${sub.name}/pitest")
+                copy {
+                    from pitestSrc
+                    into pitestDst
+                }
+            }
+        }
+
+        // 한 줄 요약 파일도 함께 남긴다 (XML 파싱 없이 빠른 비교용)
+        File summary = new File(destinationRoot, 'summary.txt')
+        summary.text = "label: ${label}\ntimestamp: ${timestamp}\ngenerated_at: ${new Date()}\n\n"
+        subprojects.each { sub ->
+            File xml = new File(sub.buildDir, 'reports/jacoco/test/jacocoTestReport.xml')
+            if (xml.exists()) {
+                summary.append("[${sub.name}] jacoco xml: ${xml.absolutePath}\n")
+            }
+            File pitestIndex = new File(sub.buildDir, 'reports/pitest/index.html')
+            if (pitestIndex.exists()) {
+                summary.append("[${sub.name}] pit html : ${pitestIndex.absolutePath}\n")
+            }
+        }
+        println "Coverage snapshot archived to: ${destinationRoot}"
+    }
+}
