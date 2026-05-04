@@ -20,6 +20,8 @@
 
 ## 2. Tier 분류와 임계치
 
+본 정책은 **3단계** Tier로 운영한다. 설정/main/생성 코드는 Tier로 분류하지 않고 jacocoExclusions로 통째 제외한다(아래 "Tier 분류 외" 섹션).
+
 ### Tier 1 — Critical (95~100%)
 *깨지면 보안/데이터/계약 손상. 정책 표현물 자체.*
 
@@ -52,13 +54,15 @@
 | `application.support.audit.*` | 80% | 75% | 65% |
 | `presentation.support.logging` (TraceIdFilter 등) | 85% | 80% | 70% |
 
-### Tier 4 — Configuration (50% / 제외)
+### Tier 분류 외 (커버리지 게이트 대상 아님)
 
-| 패키지/클래스 | JaCoCo Line | 비고 |
+다음 영역은 Tier로 묶지 않고 `jacocoExclusions`에서 통째로 제외한다 — 통합 테스트가 컨텍스트 로딩 과정에서 자연스럽게 거치므로 별도 단위 테스트가 무가치한 영역이다.
+
+| 패키지/클래스 | 처리 | 비고 |
 |---|---|---|
-| `bootstrap.config.*` (`@Configuration` + `@Bean`) | 50% | 통합 테스트가 컨텍스트 로딩으로 자연 커버 |
-| `bootstrap.AuthApplication.main` | 제외 | 의미 없음 |
-| Flyway migrations | 제외 | SQL은 별도 마이그레이션 테스트 |
+| `bootstrap.config.*` (`@Configuration` + `@Bean`) | jacocoExclusions에서 제외 | 통합 테스트가 자연 커버. 단, 핵심 핸들러(ApiErrorController 등)는 Tier 1로 별도 강제. |
+| `bootstrap.AuthApplication.main` | jacocoExclusions에서 제외 | 의미 없음 |
+| Flyway migrations | jacocoExclusions에서 제외 | SQL은 별도 마이그레이션 테스트 |
 
 ---
 

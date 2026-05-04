@@ -20,8 +20,10 @@ allprojects {
 //                      → JaCoCo Line 80~90% / Branch 75~85% / PIT 70~75%
 //   Tier 3 (Support) : security 어댑터·audit·필터
 //                      → JaCoCo Line 75~85% / Branch 70~80% / PIT 60~70%
-//   Tier 4 (Config)  : @Configuration·main·생성된 코드
-//                      → 게이트 제외 또는 50%
+//
+// @Configuration / main / generated 코드는 Tier가 아니라 jacocoExclusions에서
+// 통째로 제외한다. 통합 테스트가 컨텍스트 로딩 과정에서 자연스럽게 거치므로
+// 별도 단위 테스트가 무가치한 영역이다.
 //
 // 모듈별 임계치는 각 모듈의 jacocoTestCoverageVerification에서 강제한다.
 // 점진적 상향: 6개월마다 +5%p, 또는 신규 PR이 baseline을 떨어뜨리지 않게 게이트.
@@ -226,7 +228,7 @@ project(':infrastructure') {
     }
 }
 
-// ---- bootstrap (Tier 1 for handlers, Tier 4 for config) ------
+// ---- bootstrap (Tier 1 for handlers; @Configuration excluded) ----
 project(':bootstrap') {
     apply plugin: 'org.springframework.boot'
 
@@ -242,6 +244,7 @@ project(':bootstrap') {
         dependsOn tasks.named('test')
         violationRules {
             // Tier 1: 핸들러/필터/매퍼 어댑터
+            // @Configuration·main은 jacocoExclusions에서 제외됨(별도 Tier 없음).
             rule {
                 element = 'CLASS'
                 includes = [
@@ -257,14 +260,6 @@ project(':bootstrap') {
                 limit {
                     counter = 'BRANCH'
                     minimum = 0.90
-                }
-            }
-            // Tier 4: 나머지(주로 @Configuration)는 매우 낮은 라인 게이트만 — 통합 테스트로 자연 커버
-            rule {
-                element = 'BUNDLE'
-                limit {
-                    counter = 'LINE'
-                    minimum = 0.50
                 }
             }
         }
