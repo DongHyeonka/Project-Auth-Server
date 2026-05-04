@@ -372,21 +372,26 @@ tasks.register('mutationBaseline') {
 // =============================================================
 tasks.register('archiveCoverageReport') {
     group = 'verification'
-    description = 'Snapshot JaCoCo + PIT reports into coverage-history/{timestamp-label}/ for regression tracking.'
+    description = 'Snapshot JaCoCo + PIT reports into coverage-history/{label}/ for regression tracking. ' +
+            'Requires -Plabel=<event-name> (e.g. -Plabel=before, -Plabel=after, -Plabel=2026-08-12-before).'
 
     doLast {
-        String timestamp = new Date().format('yyyyMMdd-HHmmss')
-        String label
-        if (project.hasProperty('label')) {
-            label = project.property('label')
-        } else {
-            try {
-                label = ['git', 'rev-parse', '--short', 'HEAD'].execute(null, rootDir).text.trim()
-            } catch (Exception ignored) {
-                label = 'unlabeled'
-            }
+        if (!project.hasProperty('label')) {
+            throw new GradleException(
+                    "archiveCoverageReport requires -Plabel=<event-name>. " +
+                    "Example: ./gradlew archiveCoverageReport -Plabel=before " +
+                    "or -Plabel=2026-08-12-aggregate-before. " +
+                    "See docs/testing-history/README.md for the naming convention."
+            )
         }
-        File destinationRoot = new File(rootDir, "coverage-history/${timestamp}-${label}")
+        String label = project.property('label')
+        File destinationRoot = new File(rootDir, "coverage-history/${label}")
+        if (destinationRoot.exists()) {
+            throw new GradleException(
+                    "coverage-history/${label} already exists. " +
+                    "Choose a different label or delete the existing snapshot first."
+            )
+        }
         destinationRoot.mkdirs()
 
         subprojects.each { sub ->
@@ -410,7 +415,7 @@ tasks.register('archiveCoverageReport') {
 
         // 한 줄 요약 파일도 함께 남긴다 (XML 파싱 없이 빠른 비교용)
         File summary = new File(destinationRoot, 'summary.txt')
-        summary.text = "label: ${label}\ntimestamp: ${timestamp}\ngenerated_at: ${new Date()}\n\n"
+        summary.text = "label: ${label}\ngenerated_at: ${new Date()}\n\n"
         subprojects.each { sub ->
             File xml = new File(sub.buildDir, 'reports/jacoco/test/jacocoTestReport.xml')
             if (xml.exists()) {
