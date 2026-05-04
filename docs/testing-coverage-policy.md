@@ -60,17 +60,23 @@
 
 | 패키지/클래스 | 처리 | 비고 |
 |---|---|---|
-| `bootstrap.config.*` (`@Configuration` + `@Bean`) | jacocoExclusions에서 제외 | 통합 테스트가 자연 커버. 단, 핵심 핸들러(ApiErrorController 등)는 Tier 1로 별도 강제. |
-| `bootstrap.AuthApplication.main` | jacocoExclusions에서 제외 | 의미 없음 |
-| Flyway migrations | jacocoExclusions에서 제외 | SQL은 별도 마이그레이션 테스트 |
+| `*Configuration` 클래스 (`@Configuration` 컨벤션) | jacocoExclusions에서 제외 | 통합 테스트가 컨텍스트 로딩으로 자연 커버. 빈 와이어링만 있고 분기 로직 없음. |
+| `*Config` 클래스 (짧은 변형, 예: `OpenApiConfig`) | jacocoExclusions에서 제외 | 위와 동일 |
+| `*Properties` 클래스 (`@ConfigurationProperties`) | jacocoExclusions에서 제외 | setter/getter 보일러플레이트 |
+| `*Application` 클래스 (Spring Boot main) | jacocoExclusions에서 제외 | 의미 없음 |
+| Flyway migrations | (코드 아님) | SQL은 별도 마이그레이션 테스트 |
+
+> **중요**: 이전 정책의 `**/config/**` 광역 제외는 폐기됨. 그 패턴은 핵심 핸들러(ApiErrorController, SecurityResponseExceptionHandler, RequestBoundApiResultFactory 등 — 모두 `bootstrap/config/web/`, `bootstrap/config/auth/security/`에 위치)까지 같이 빼버려서 운영 빌드에서 진짜 측정값이 보이지 않았다. 클래스명 컨벤션 기반 제외로 좁혀, 동작 코드는 모두 측정 대상이 된다.
 
 ---
 
 ## 3. 제외 목록 (build.gradle `jacocoExclusions`)
 
 ```
-- **/AuthApplication.class                    # main
-- **/config/**                                # 통합 테스트로 자연 커버 — 단, 핵심 핸들러는 별도 게이트로 강제
+- **/*Application.class                       # Spring Boot main
+- **/*Configuration.class                     # @Configuration 빈 와이어링
+- **/*Config.class                            # @Configuration 짧은 변형 (OpenApiConfig 등)
+- **/*Properties.class                        # @ConfigurationProperties 보일러플레이트
 - **/dto/**/*Request.class, *Response.class   # boilerplate
 - **/Q*.class                                 # QueryDSL generated
 - **/*$Builder.class                          # Lombok generated

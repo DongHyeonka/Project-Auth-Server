@@ -30,9 +30,19 @@ allprojects {
 // =============================================================
 
 ext {
+    // Spring 컨벤션 기반 정밀 제외:
+    //   - *Configuration: @Configuration 빈 와이어링
+    //   - *Config:        @Configuration의 짧은 변형 (OpenApiConfig 등)
+    //   - *Properties:    @ConfigurationProperties 보일러플레이트
+    //   - *Application:   Spring Boot main
+    // config 패키지 안의 핸들러/필터/팩토리/어댑터(예: ApiErrorController,
+    // SecurityResponseExceptionHandler, RequestBoundApiResultFactory,
+    // TraceIdFilter, SecurityAuditTrailWriter 등)는 모두 측정 대상에 포함된다.
     jacocoExclusions = [
-            '**/AuthApplication.class',
-            '**/config/**',
+            '**/*Application.class',
+            '**/*Configuration.class',
+            '**/*Config.class',
+            '**/*Properties.class',
             '**/dto/**/*Request.class',
             '**/dto/**/*Response.class',
             '**/Q*.class',
