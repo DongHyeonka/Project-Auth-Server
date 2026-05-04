@@ -161,11 +161,6 @@ class ValidationExceptionHandlerTest {
                 });
     }
 
-    @SuppressWarnings("unused")
-    private static DefaultMessageSourceResolvable msr(String code, String defaultMessage) {
-        return new DefaultMessageSourceResolvable(new String[]{code}, defaultMessage);
-    }
-
     /**
      * HandlerMethodValidationException stub. 핸들러는 {@code getValueResults()}만 호출하므로
      * 단일 ParameterValidationResult를 가진 가짜를 반환한다. paramName이 null인지에 따라
@@ -181,25 +176,25 @@ class ValidationExceptionHandlerTest {
                     @Override public String getParameterName() { return paramName; }
                 };
 
-        Object validationResult = (Object) java.lang.reflect.Proxy.newProxyInstance(
-                org.springframework.validation.method.MethodValidationResult.class.getClassLoader(),
-                new Class<?>[]{org.springframework.validation.method.MethodValidationResult.class},
-                (proxy, method, args) -> switch (method.getName()) {
-                    case "getValueResults", "getParameterValidationResults" -> List.of(
-                            stubParameterValidationResult(param, message));
-                    case "hasErrors" -> true;
-                    case "getAllErrors" -> List.of(new DefaultMessageSourceResolvable(
-                            new String[]{"NotBlank"}, message));
-                    case "getAllValidationResults" -> List.of();
-                    case "getCrossParameterValidationResults", "getBeanResults" -> List.of();
-                    case "getMethod" -> dummy;
-                    case "getTarget" -> "stubTarget";
-                    case "throwIfViolationsPresent" -> null;
-                    default -> defaultPrimitive(method.getReturnType());
-                });
+        org.springframework.validation.method.MethodValidationResult validationResult =
+                (org.springframework.validation.method.MethodValidationResult) java.lang.reflect.Proxy.newProxyInstance(
+                        org.springframework.validation.method.MethodValidationResult.class.getClassLoader(),
+                        new Class<?>[]{org.springframework.validation.method.MethodValidationResult.class},
+                        (proxy, method, args) -> switch (method.getName()) {
+                            case "getValueResults", "getParameterValidationResults" -> List.of(
+                                    stubParameterValidationResult(param, message));
+                            case "hasErrors" -> true;
+                            case "getAllErrors" -> List.of(new DefaultMessageSourceResolvable(
+                                    new String[]{"NotBlank"}, message));
+                            case "getAllValidationResults" -> List.of();
+                            case "getCrossParameterValidationResults", "getBeanResults" -> List.of();
+                            case "getMethod" -> dummy;
+                            case "getTarget" -> "stubTarget";
+                            case "throwIfViolationsPresent" -> null;
+                            default -> defaultPrimitive(method.getReturnType());
+                        });
 
-        return new HandlerMethodValidationException(
-                (org.springframework.validation.method.MethodValidationResult) validationResult);
+        return new HandlerMethodValidationException(validationResult);
     }
 
     private static org.springframework.validation.method.ParameterValidationResult stubParameterValidationResult(

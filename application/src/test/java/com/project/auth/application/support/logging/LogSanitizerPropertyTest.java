@@ -6,7 +6,6 @@ import net.jqwik.api.ForAll;
 import net.jqwik.api.From;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
-import net.jqwik.api.constraints.IntRange;
 import net.jqwik.api.constraints.StringLength;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -163,11 +162,6 @@ class LogSanitizerPropertyTest {
         Arbitrary<String> domain = Arbitraries.strings()
                 .alpha().ofMinLength(2).ofMaxLength(20);
         return local.flatMap(l -> domain.map(d -> l + "@" + d + ".com"));
-    }
-
-    @SuppressWarnings("unused")
-    private static boolean withinRange(@IntRange(min = 1) int v) {
-        return true;
     }
 
     private static boolean looksLikeIpv4(String value) {
