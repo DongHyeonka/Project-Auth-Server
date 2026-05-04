@@ -361,35 +361,51 @@ tasks.register('mutationBaseline') {
 }
 
 // =============================================================
-// 커버리지 리포트 영구 보관
-//   ./gradlew archiveCoverageReport
-// 매 측정 시 coverage-history/{타임스탬프-라벨}/{모듈}/ 아래로 JaCoCo + PIT 리포트를
-// 통째로 복사한다. 회귀 추적용 — 이전 시점 리포트를 git 충돌 없이 보관 가능.
+// 커버리지 리포트 영구 보관 (버전 + 날짜 기반 누적 기록)
 //
-// 라벨 부여:
-//   ./gradlew archiveCoverageReport -Plabel=before-jqwik
-// 라벨을 주지 않으면 짧은 git SHA가 자동 사용된다.
+//   ./gradlew archiveCoverageReport -Plabel=2026-05-04-jqwik-after
+//
+// 산출 경로:
+//   coverage-history/{project.version}/{label}/{module}/{tool}/...
+//
+// 예) coverage-history/v0.0.1-SNAPSHOT/2026-05-04-jqwik-after/application/jacoco/...
+//
+// 라벨 규칙:
+//   - 형식: {YYYY-MM-DD}-{kebab-case 사건명}
+//   - 같은 버전 내 같은 라벨 중복 금지(덮어쓰기 차단)
+//   - 라벨 누락 시 빌드 실패
+//
+// 버전 prefix는 {project.version}을 그대로 따른다. 릴리스 버전이 바뀌면
+// 자동으로 새 디렉토리에 적재되어, 시간 순서가 아니라 버전 단위 회귀 비교가
+// 가능해진다. 같은 버전 안에서는 날짜+사건명 라벨로 누적된다.
 // =============================================================
 tasks.register('archiveCoverageReport') {
     group = 'verification'
-    description = 'Snapshot JaCoCo + PIT reports into coverage-history/{label}/ for regression tracking. ' +
-            'Requires -Plabel=<event-name> (e.g. -Plabel=before, -Plabel=after, -Plabel=2026-08-12-before).'
+    description = 'Snapshot JaCoCo + PIT reports into coverage-history/{version}/{label}/ for cumulative tracking. ' +
+            'Requires -Plabel=YYYY-MM-DD-<event-name> (e.g. -Plabel=2026-05-04-jqwik-after).'
 
     doLast {
         if (!project.hasProperty('label')) {
             throw new GradleException(
-                    "archiveCoverageReport requires -Plabel=<event-name>. " +
-                    "Example: ./gradlew archiveCoverageReport -Plabel=before " +
-                    "or -Plabel=2026-08-12-aggregate-before. " +
+                    "archiveCoverageReport requires -Plabel=YYYY-MM-DD-<event-name>. " +
+                    "Example: ./gradlew archiveCoverageReport -Plabel=2026-05-04-jqwik-after. " +
                     "See docs/testing-history/README.md for the naming convention."
             )
         }
         String label = project.property('label')
-        File destinationRoot = new File(rootDir, "coverage-history/${label}")
+        if (!(label ==~ /^\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$/)) {
+            throw new GradleException(
+                    "label '${label}' does not match the required format YYYY-MM-DD-<kebab-case-event-name>. " +
+                    "Example: 2026-05-04-jqwik-after, 2026-08-12-aggregate-before."
+            )
+        }
+
+        String versionDir = "v${project.version}"
+        File destinationRoot = new File(rootDir, "coverage-history/${versionDir}/${label}")
         if (destinationRoot.exists()) {
             throw new GradleException(
-                    "coverage-history/${label} already exists. " +
-                    "Choose a different label or delete the existing snapshot first."
+                    "coverage-history/${versionDir}/${label} already exists. " +
+                    "Pick a different event-name suffix or delete the existing snapshot first."
             )
         }
         destinationRoot.mkdirs()
@@ -415,7 +431,7 @@ tasks.register('archiveCoverageReport') {
 
         // 한 줄 요약 파일도 함께 남긴다 (XML 파싱 없이 빠른 비교용)
         File summary = new File(destinationRoot, 'summary.txt')
-        summary.text = "label: ${label}\ngenerated_at: ${new Date()}\n\n"
+        summary.text = "version: ${project.version}\nlabel: ${label}\ngenerated_at: ${new Date()}\n\n"
         subprojects.each { sub ->
             File xml = new File(sub.buildDir, 'reports/jacoco/test/jacocoTestReport.xml')
             if (xml.exists()) {

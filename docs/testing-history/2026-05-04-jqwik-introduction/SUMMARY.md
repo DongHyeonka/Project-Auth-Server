@@ -85,8 +85,8 @@
 
 ## 첨부 (원본 리포트)
 
-- BEFORE 스냅샷: [`coverage-history/before/`](../../../coverage-history/before/)
-- AFTER 스냅샷: [`coverage-history/after/`](../../../coverage-history/after/)
+- BEFORE 스냅샷: `coverage-history/v0.0.1-SNAPSHOT/2026-05-04-jqwik-before/`
+- AFTER 스냅샷: `coverage-history/v0.0.1-SNAPSHOT/2026-05-04-jqwik-after/`
 
 각 스냅샷의 모듈별 진입점:
 ```
@@ -97,3 +97,6 @@
 {snapshot}/bootstrap/jacoco/html/index.html
 {snapshot}/infrastructure/jacoco/html/index.html
 ```
+
+> `coverage-history/`는 git ignore 되어 로컬 전용. 같은 측정을 재현하려면
+> SUMMARY.md의 "측정 조건 (재현용)" 섹션 참고.
