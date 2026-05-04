@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.spring.boot) apply false
     alias(libs.plugins.spring.dependency.management) apply false
     alias(libs.plugins.pitest) apply false
+    id 'jacoco'
 }
 
 allprojects {
@@ -434,6 +435,15 @@ tasks.register('archiveCoverageReport') {
             }
         }
 
+        // 루트의 aggregate 리포트가 존재하면 함께 보관
+        File aggregateSrc = new File(rootProject.buildDir, 'reports/jacoco/aggregate')
+        if (aggregateSrc.exists()) {
+            copy {
+                from aggregateSrc
+                into new File(destinationRoot, 'aggregate')
+            }
+        }
+
         // 한 줄 요약 파일도 함께 남긴다 (XML 파싱 없이 빠른 비교용)
         File summary = new File(destinationRoot, 'summary.txt')
         summary.text = "version: ${project.version}\nlabel: ${label}\ngenerated_at: ${new Date()}\n\n"
@@ -448,5 +458,48 @@ tasks.register('archiveCoverageReport') {
             }
         }
         println "Coverage snapshot archived to: ${destinationRoot}"
+    }
+}
+
+// =============================================================
+// 멀티모듈 통합 커버리지 리포트
+//
+//   ./gradlew jacocoAggregateReport
+//
+// bootstrap의 통합 테스트가 다른 모듈(presentation/application/infrastructure)
+// 클래스를 실행한 흔적까지 한 번에 모아 단일 리포트로 만든다. 모듈별 단위 측정에서는
+// "presentation 24.8%" 처럼 낮게 보이는 핸들러들이 통합 테스트로 실제 얼마나 커버되는지
+// aggregate에서 정직한 수치로 드러난다.
+//
+// 산출물: build/reports/jacoco/aggregate/{html,xml}/
+// =============================================================
+tasks.register('jacocoAggregateReport', JacocoReport) {
+    group = 'verification'
+    description = 'Combine JaCoCo execution data from every subproject into a single aggregated report.'
+
+    dependsOn subprojects.collect { ":${it.name}:test" }
+
+    def coveredProjects = subprojects.findAll { it.plugins.hasPlugin('jacoco') }
+
+    executionData.from(files(coveredProjects.collect {
+        "${it.buildDir}/jacoco/test.exec"
+    }).filter { it.exists() })
+
+    sourceDirectories.from(files(coveredProjects.collect {
+        it.sourceSets.main.allSource.srcDirs
+    }))
+
+    classDirectories.from(files(coveredProjects.collect { sub ->
+        sub.sourceSets.main.output.classesDirs.collect { dir ->
+            fileTree(dir: dir, exclude: rootProject.ext.jacocoExclusions)
+        }
+    }.flatten()))
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/aggregate/html')
+        xml.outputLocation = layout.buildDirectory.file('reports/jacoco/aggregate/jacocoAggregateReport.xml')
     }
 }
