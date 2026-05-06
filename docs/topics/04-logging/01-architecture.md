@@ -1,5 +1,11 @@
 # Logging 아키텍처
 
+> **정책 단일 출처**: 로깅과 관련된 정책 항목 (정책 6 / 9 / 11) 의 *현재 상태* 는
+> [`docs/exception-handling-policy.md`](../../exception-handling-policy.md) 가 정식 정의입니다.
+> 본 문서는 그 정책의 *이유와 흐름* 을 설명합니다.
+> Sanitizer 회귀 게이트 (jqwik / 단위 테스트 / 96.3% 커버리지) 는
+> [`docs/testing-coverage-policy.md`](../../testing-coverage-policy.md) 와 함께 봅니다.
+
 ## 1. Context & Scope
 
 ### 목적
@@ -151,6 +157,16 @@ sequenceDiagram
 
 이 구조의 장점은 로그 메시지가 비즈니스 의미만 담고, 상관관계 컨텍스트는 로깅 인프라가 일관되게 관리한다는 점입니다.
 
+##### MDC 누락 시 응답 traceId 는 sentinel `"-"`
+
+`RequestBoundApiResultFactory` 는 `MDC.get("traceId")` 가 null/blank 이면 응답 `ApiResult.traceId` 에 `"-"` 를 넣습니다 (JSON `null` 로 가리지 않음).
+이 sentinel 의 의도는 *TraceIdFilter 미설치/오설정* 같은 운영 결함을 응답에서 즉시 노출시키는 것입니다.
+
+- JSON `null` 로 두면 클라이언트/CS팀이 traceId 가 없다는 사실을 인지하지 못한 채 운영 트리아지가 진행됩니다.
+- `"-"` sentinel 은 대시보드/검색에서 즉시 눈에 띕니다 — "왜 traceId 가 `-` 로 나오지?" 가 정상적인 첫 질문이 됩니다.
+
+테스트에서도 동일 정책을 단언합니다 (`RequestBoundApiResultFactoryPropertyTest` — jqwik 속성 6개).
+
 #### 의미 필드는 SLF4J key-value pair로 올린다
 
 prod profile의 `structured-console-appender.xml`은 Spring Boot structured logging encoder를 사용합니다.  
@@ -195,6 +211,17 @@ provider = github AND eventType = OAUTH_LOGIN_SUCCESS
 - 글로벌 예외 핸들러는 root logger에서 한 번만 경고/오류를 남깁니다.
 
 이렇게 나누면 같은 실패가 "서비스 logger + 예외 핸들러 logger"로 중복되지 않고, audit stream은 여전히 별도로 유지됩니다.
+
+##### 보안 이벤트의 audit 채널은 *경로와 무관하게* 단일
+
+인증/인가 거부는 두 경로로 도달할 수 있습니다.
+
+1. 필터 단 — `SecurityExceptionHandler` (Spring Security `AuthenticationEntryPoint` / `AccessDeniedHandler`)
+2. 컨트롤러 단 — `SecurityResponseExceptionHandler` (`@PreAuthorize` 등 메서드 보안에서 발생한 예외)
+
+두 핸들러 모두 `SecurityAuditTrailWriter.record(...)` 한 곳을 통과해 `audit.auth` 로거에 적재합니다. 즉 같은 보안 이벤트가 어느 경로로 들어와도 audit 형식이 동일합니다 (`eventType`, `actorId`, `method`, `requestPath`).
+
+audit 쓰기는 try/catch 로 격리됩니다 — audit 백엔드 장애가 응답 렌더링을 막지 않게 하기 위함입니다.
 
 #### audit file은 opt-in 운영 계약으로 둔다
 
@@ -333,6 +360,8 @@ prod profile에서는 콘솔이 structured JSON으로 나가고, Kubernetes에�
   - `RequestAccessLogFilterTest`는 access 값이 message가 아니라 key-value pair로 올라가고 principal이 `actorId`로 축약되는지 확인합니다.
   - `LoggingConfigurationSmokeTest`는 prod structured encoder가 MDC와 key-value pair를 JSON top-level field로 출력하는지 확인합니다.
   - 서비스 단위 테스트는 audit event가 `emailMasked`, `userIdHash`를 발행하는지 검증합니다.
+  - `LogSanitizerPropertyTest` (jqwik 속성 11개) + `LogSanitizerEdgeCaseTest` (단위) 가 마스킹 정책 (이메일/IP/path) 회귀를 자동 차단합니다 — `LogSanitizer` 라인 커버리지 96.3%, 잔여 2줄은 SHA-256 환경 의존이라 자연 미커버.
+  - `RequestBoundApiResultFactoryPropertyTest` (jqwik 속성 6개) 가 traceId sentinel `"-"` 폴백 정책을 자동 단언.
 - 운영:
   - Kubernetes에서는 structured console 수집 backend를 기준으로 확인합니다.
   - audit file은 persistent volume 또는 file shipper 계약이 있을 때만 `audit-file` profile로 켭니다.
