@@ -32,6 +32,7 @@ class ApiErrorHttpStatusMapperClientFacingCoverageTest {
                 Arguments.of(AuthErrorCode.ACCESS_DENIED, HttpStatus.FORBIDDEN),
                 Arguments.of(AuthErrorCode.KEYCLOAK_CLAIMS_INVALID, HttpStatus.BAD_REQUEST),
                 Arguments.of(AuthErrorCode.KEYCLOAK_USER_NOT_FOUND, HttpStatus.NOT_FOUND),
+                Arguments.of(AuthErrorCode.KEYCLOAK_ACCOUNT_CONFLICT, HttpStatus.CONFLICT),
 
                 Arguments.of(PresentationErrorCode.INVALID_INPUT, HttpStatus.BAD_REQUEST),
                 Arguments.of(PresentationErrorCode.INVALID_REQUEST_BODY, HttpStatus.BAD_REQUEST),

@@ -97,13 +97,14 @@ Accepted
 
 ### 위험 완화
 
-- `GET /api/v1/auth/me` 는 내부 사용자 조회만 수행, token 검증은 ResourceServer 가 담당.
-- 연결된 내부 사용자가 없으면 자동 생성 / 자동 연결 없이 `AUTH-004` 404 반환.
+- `GET /api/v1/auth/me` 의 token 검증은 ResourceServer 가 담당.
+- 연결된 내부 사용자가 없으면 [ADR-005](./05-adr-keycloak-user-auto-registration.md)에 따라 email 충돌 검사 후 내부 사용자 자동 등록.
 - role / claim mapping 은 `KeycloakJwtAuthenticationConverter` 한 곳에 모임.
 - 조회 흐름은 내부 DB lookup 만 수행하므로 `GET` 에 숨은 쓰기 부작용 없음.
 
 ## 관련 문서
 
 - [02-adr-keycloak-resource-server.md](./02-adr-keycloak-resource-server.md) — 인증 주체 이전 결정 (ADR-002)
+- [05-adr-keycloak-user-auto-registration.md](./05-adr-keycloak-user-auto-registration.md) — Keycloak 인증 사용자 내부 자동 등록 결정 (ADR-005)
 - [01-architecture.md](./01-architecture.md) — 현재 ResourceServer 아키텍처
 - [03-claim-role-design.md](./03-claim-role-design.md) — claim / role 매핑 정책
