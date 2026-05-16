@@ -64,7 +64,7 @@ controller는 `@CurrentUser`로 이 principal을 받고, application에는 `Keyc
 
 ## Result / Trade-offs
 
-- token 검증 결과는 신뢰하되, 내부 사용자 조회는 `(provider=KEYCLOAK, provider_subject=sub)` 기준으로만 수행합니다.
-- email은 자동 계정 연결 키로 쓰지 않습니다. 연결된 내부 사용자가 없으면 자동 생성 없이 `AUTH-004` 404를 반환합니다.
+- token 검증 결과는 신뢰하되, 내부 사용자 식별은 `(provider=KEYCLOAK, provider_subject=sub)` 기준으로만 수행합니다.
+- email은 자동 계정 연결 키로 쓰지 않습니다. 연결된 내부 사용자가 없으면 email 충돌 검사 후 새 내부 사용자를 만들고, 같은 email 이 이미 다른 subject 에 연결되어 있으면 `AUTH-005` 409를 반환합니다.
 - 실무 권장안은 “IdP subject를 immutable external identity로 삼고, email은 표시/연락/초기 등록 보조값으로만 다루는 것”입니다. email은 변경될 수 있고 재사용될 수 있으므로 권한 있는 내부 계정 연결 키로 쓰면 위험합니다.
 - 표시용 `email`/`name`은 token claim에서 왔더라도 DB에 저장된 값이 authoritative입니다. 따라서 `/api/v1/auth/me` 응답은 DB 값을 노출하고, 권한(`authorities`)은 token claim에서 그대로 가져옵니다.

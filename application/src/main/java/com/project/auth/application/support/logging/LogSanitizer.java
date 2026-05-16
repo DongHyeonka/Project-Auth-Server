@@ -39,10 +39,6 @@ public final class LogSanitizer {
         return normalize(value, REQUEST_PATH_MAX_LENGTH);
     }
 
-    public static String reason(String value) {
-        return normalize(value, DEFAULT_MAX_LENGTH);
-    }
-
     public static String actorId(String value) {
         if (value == null || value.isBlank() || ANONYMOUS_VALUE.equals(value)) {
             return ANONYMOUS_VALUE;

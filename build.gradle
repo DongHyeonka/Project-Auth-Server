@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.spring.boot) apply false
     alias(libs.plugins.spring.dependency.management) apply false
+    alias(libs.plugins.pitest) apply false
+    id 'jacoco'
 }
 
 allprojects {
@@ -8,9 +10,52 @@ allprojects {
     version = '0.0.1-SNAPSHOT'
 }
 
+// =============================================================
+// 커버리지/뮤테이션/속성 기반 테스트 정책
+//
+// 본 정책의 근거와 Tier 분류는 docs/testing-coverage-policy.md 참조.
+// 요약:
+//   Tier 1 (Critical): 예외 핸들러·매퍼·LogSanitizer·도메인 예외
+//                      → JaCoCo Line 95~100% / Branch 90~100% / PIT 85~95%
+//   Tier 2 (Core)    : usecase·controller·DTO·repo adapter
+//                      → JaCoCo Line 80~90% / Branch 75~85% / PIT 70~75%
+//   Tier 3 (Support) : security 어댑터·audit·필터
+//                      → JaCoCo Line 75~85% / Branch 70~80% / PIT 60~70%
+//
+// @Configuration / main / generated 코드는 Tier가 아니라 jacocoExclusions에서
+// 통째로 제외한다. 통합 테스트가 컨텍스트 로딩 과정에서 자연스럽게 거치므로
+// 별도 단위 테스트가 무가치한 영역이다.
+//
+// 모듈별 임계치는 각 모듈의 jacocoTestCoverageVerification에서 강제한다.
+// 점진적 상향: 6개월마다 +5%p, 또는 신규 PR이 baseline을 떨어뜨리지 않게 게이트.
+// =============================================================
+
+ext {
+    // Spring 컨벤션 기반 정밀 제외:
+    //   - *Configuration: @Configuration 빈 와이어링
+    //   - *Config:        @Configuration의 짧은 변형 (OpenApiConfig 등)
+    //   - *Properties:    @ConfigurationProperties 보일러플레이트
+    //   - *Application:   Spring Boot main
+    // config 패키지 안의 핸들러/필터/팩토리/어댑터(예: ApiErrorController,
+    // SecurityResponseExceptionHandler, RequestBoundApiResultFactory,
+    // TraceIdFilter, SecurityAuditTrailWriter 등)는 모두 측정 대상에 포함된다.
+    jacocoExclusions = [
+            '**/*Application.class',
+            '**/*Configuration.class',
+            '**/*Config.class',
+            '**/*Properties.class',
+            '**/dto/**/*Request.class',
+            '**/dto/**/*Response.class',
+            '**/Q*.class',
+            '**/*$Builder.class',
+            '**/generated-sources/**'
+    ]
+}
+
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'jacoco'
 
     java {
         toolchain {
@@ -30,14 +75,171 @@ subprojects {
 
         testImplementation 'org.junit.jupiter:junit-jupiter'
         testImplementation 'org.assertj:assertj-core'
+        testImplementation libs.jqwik
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
+    jacoco {
+        toolVersion = '0.8.13'
+    }
+
     tasks.named('test') {
-        useJUnitPlatform()
+        useJUnitPlatform {
+            includeEngines 'junit-jupiter', 'jqwik'
+        }
+        finalizedBy 'jacocoTestReport'
+    }
+
+    tasks.named('jacocoTestReport') {
+        dependsOn tasks.named('test')
+        reports {
+            xml.required = true
+            html.required = true
+            csv.required = false
+        }
+        classDirectories.setFrom(
+                files(sourceSets.main.output.classesDirs.collect {
+                    fileTree(dir: it, exclude: rootProject.ext.jacocoExclusions)
+                })
+        )
+    }
+
+    tasks.named('jacocoTestCoverageVerification') {
+        classDirectories.setFrom(
+                files(sourceSets.main.output.classesDirs.collect {
+                    fileTree(dir: it, exclude: rootProject.ext.jacocoExclusions)
+                })
+        )
+    }
+
+    // 게이트는 명시적 ./gradlew coverageGate 호출 시에만 실행한다.
+    // 일반 ./gradlew build는 측정만 한다(현재 baseline 안정 전이므로 깨지면 안 된다).
+}
+
+// =============================================================
+// 모듈별 커버리지 게이트 + PIT 설정
+// =============================================================
+
+// ---- domain (Tier 1) -----------------------------------------
+project(':domain') {
+    tasks.named('jacocoTestCoverageVerification') {
+        dependsOn tasks.named('test')
+        violationRules {
+            rule {
+                element = 'BUNDLE'
+                limit {
+                    counter = 'LINE'
+                    minimum = 0.95
+                }
+                limit {
+                    counter = 'BRANCH'
+                    minimum = 0.90
+                }
+            }
+        }
     }
 }
 
+// ---- application (Tier 1 for support.exception, Tier 2 elsewhere) ----
+project(':application') {
+    tasks.named('jacocoTestCoverageVerification') {
+        dependsOn tasks.named('test')
+        violationRules {
+            // Tier 1: 예외 코드/타입 시스템
+            rule {
+                element = 'PACKAGE'
+                includes = ['com.project.auth.application.support.exception']
+                limit {
+                    counter = 'LINE'
+                    minimum = 0.95
+                }
+                limit {
+                    counter = 'BRANCH'
+                    minimum = 0.90
+                }
+            }
+            // Tier 1: LogSanitizer
+            rule {
+                element = 'CLASS'
+                includes = ['com.project.auth.application.support.logging.LogSanitizer']
+                limit {
+                    counter = 'LINE'
+                    minimum = 1.00
+                }
+                limit {
+                    counter = 'BRANCH'
+                    minimum = 1.00
+                }
+            }
+            // Tier 2: 나머지 application 코드 (usecase/service)
+            rule {
+                element = 'BUNDLE'
+                limit {
+                    counter = 'LINE'
+                    minimum = 0.80
+                }
+                limit {
+                    counter = 'BRANCH'
+                    minimum = 0.75
+                }
+            }
+        }
+    }
+}
+
+// ---- presentation (Tier 1 for support.exception, Tier 2 controllers) ----
+project(':presentation') {
+    tasks.named('jacocoTestCoverageVerification') {
+        dependsOn tasks.named('test')
+        violationRules {
+            rule {
+                element = 'PACKAGE'
+                includes = ['com.project.auth.presentation.support.exception']
+                limit {
+                    counter = 'LINE'
+                    minimum = 0.95
+                }
+                limit {
+                    counter = 'BRANCH'
+                    minimum = 0.90
+                }
+            }
+            rule {
+                element = 'BUNDLE'
+                limit {
+                    counter = 'LINE'
+                    minimum = 0.80
+                }
+                limit {
+                    counter = 'BRANCH'
+                    minimum = 0.75
+                }
+            }
+        }
+    }
+}
+
+// ---- infrastructure (Tier 3) ---------------------------------
+project(':infrastructure') {
+    tasks.named('jacocoTestCoverageVerification') {
+        dependsOn tasks.named('test')
+        violationRules {
+            rule {
+                element = 'BUNDLE'
+                limit {
+                    counter = 'LINE'
+                    minimum = 0.75
+                }
+                limit {
+                    counter = 'BRANCH'
+                    minimum = 0.70
+                }
+            }
+        }
+    }
+}
+
+// ---- bootstrap (Tier 1 for handlers; @Configuration excluded) ----
 project(':bootstrap') {
     apply plugin: 'org.springframework.boot'
 
@@ -47,5 +249,263 @@ project(':bootstrap') {
 
     tasks.named('jar') {
         enabled = false
+    }
+
+    tasks.named('jacocoTestCoverageVerification') {
+        dependsOn tasks.named('test')
+        violationRules {
+            // Tier 1: 핸들러/필터/매퍼 어댑터
+            // @Configuration·main은 jacocoExclusions에서 제외됨(별도 Tier 없음).
+            rule {
+                element = 'CLASS'
+                includes = [
+                        'com.project.auth.config.web.ApiErrorController',
+                        'com.project.auth.config.web.SecurityResponseExceptionHandler',
+                        'com.project.auth.config.web.InfrastructureExceptionHandler',
+                        'com.project.auth.config.auth.security.SecurityExceptionHandler'
+                ]
+                limit {
+                    counter = 'LINE'
+                    minimum = 0.95
+                }
+                limit {
+                    counter = 'BRANCH'
+                    minimum = 0.90
+                }
+            }
+        }
+    }
+}
+
+// =============================================================
+// PIT (mutation testing)
+// =============================================================
+//
+// PIT는 무겁다. CI 게이트로는 "변경된 클래스만" 돌리는 것이 현실적이지만,
+// 우선은 모듈별로 핵심 패키지를 타깃팅하여 baseline을 만든다.
+// 게이트 임계치는 baseline 측정 후 한 번 점검하고 활성화한다.
+// =============================================================
+
+configure([project(':application'), project(':presentation'), project(':bootstrap'), project(':domain')]) {
+    apply plugin: 'info.solidsoft.pitest'
+
+    pitest {
+        junit5PluginVersion = libs.versions.pitestJunit5.get()
+        pitestVersion = libs.versions.pitest.get()
+        timestampedReports = false
+        outputFormats = ['XML', 'HTML']
+        threads = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+        avoidCallsTo = [
+                'kotlin.jvm.internal',
+                'org.slf4j',
+                'java.util.logging'
+        ]
+        // 동적 프록시 기반 단위 테스트가 PIT 기본 timeout(10s)에 걸리는 사례가 있어 여유를 둔다.
+        timeoutFactor = 2.0
+        timeoutConstInMillis = 15000
+    }
+}
+
+project(':domain') {
+    pitest {
+        targetClasses = ['com.project.auth.domain.user.exception.*']
+        excludedClasses = []
+    }
+}
+
+project(':application') {
+    pitest {
+        targetClasses = [
+                'com.project.auth.application.support.exception.*',
+                'com.project.auth.application.support.logging.*'
+        ]
+        // Tier 1 PIT 임계치(85~95%) 통과 확인 후 게이트 활성화. 현재 측정값 ≈ 94%.
+        mutationThreshold = 90
+        coverageThreshold = 90
+    }
+}
+
+project(':presentation') {
+    pitest {
+        targetClasses = [
+                'com.project.auth.presentation.support.exception.*',
+                'com.project.auth.presentation.support.response.*'
+        ]
+        // 단위 테스트 추가 후 measured ≈ 79%. 현실적 마진 두고 75% 게이트.
+        // Tier 1 목표 85%까지는 후속 작업으로 살아남은 변이 분석/제거.
+        mutationThreshold = 75
+        coverageThreshold = 90
+    }
+}
+
+project(':bootstrap') {
+    pitest {
+        targetClasses = [
+                'com.project.auth.config.web.ApiErrorController',
+                'com.project.auth.config.web.SecurityResponseExceptionHandler',
+                'com.project.auth.config.web.InfrastructureExceptionHandler',
+                'com.project.auth.config.web.RequestBoundApiResultFactory',
+                'com.project.auth.config.auth.security.SecurityExceptionHandler'
+        ]
+        // bootstrap은 통합 테스트가 무거우므로 PIT는 로컬/주간 CI에서만 권장
+    }
+}
+
+// =============================================================
+// 통합 게이트 태스크
+//   ./gradlew coverageGate     -> JaCoCo 임계치 검증 (baseline 안정 후 활성화)
+//   ./gradlew mutationBaseline -> PIT 측정 (게이트 없이 점수만 본다)
+// =============================================================
+tasks.register('coverageGate') {
+    group = 'verification'
+    description = 'Run JaCoCo coverage verification across all modules.'
+    subprojects.each { sub ->
+        dependsOn ":${sub.name}:jacocoTestCoverageVerification"
+    }
+}
+
+tasks.register('mutationBaseline') {
+    group = 'verification'
+    description = 'Run PIT mutation testing on declared target classes (baseline; no threshold).'
+    // domain은 현재 wrapper 예외만 있어 변이가 생성되지 않으므로 제외 — 도메인 모델이 자라면 추가.
+    dependsOn ':application:pitest', ':presentation:pitest'
+}
+
+// =============================================================
+// 커버리지 리포트 영구 보관 (버전 + 날짜 기반 누적 기록)
+//
+//   ./gradlew archiveCoverageReport -Plabel=2026-05-04-jqwik-after
+//
+// 산출 경로:
+//   coverage-history/{project.version}/{label}/{module}/{tool}/...
+//
+// 예) coverage-history/v0.0.1-SNAPSHOT/2026-05-04-jqwik-after/application/jacoco/...
+//
+// 라벨 규칙:
+//   - 형식: {YYYY-MM-DD}-{kebab-case 사건명}
+//   - 같은 버전 내 같은 라벨 중복 금지(덮어쓰기 차단)
+//   - 라벨 누락 시 빌드 실패
+//
+// 버전 prefix는 {project.version}을 그대로 따른다. 릴리스 버전이 바뀌면
+// 자동으로 새 디렉토리에 적재되어, 시간 순서가 아니라 버전 단위 회귀 비교가
+// 가능해진다. 같은 버전 안에서는 날짜+사건명 라벨로 누적된다.
+// =============================================================
+tasks.register('archiveCoverageReport') {
+    group = 'verification'
+    description = 'Snapshot JaCoCo + PIT reports into coverage-history/{version}/{label}/ for cumulative tracking. ' +
+            'Requires -Plabel=YYYY-MM-DD-<event-name> (e.g. -Plabel=2026-05-04-jqwik-after).'
+
+    doLast {
+        if (!project.hasProperty('label')) {
+            throw new GradleException(
+                    "archiveCoverageReport requires -Plabel=YYYY-MM-DD-<event-name>. " +
+                    "Example: ./gradlew archiveCoverageReport -Plabel=2026-05-04-jqwik-after. " +
+                    "See docs/testing-history/README.md for the naming convention."
+            )
+        }
+        String label = project.property('label')
+        if (!(label ==~ /^\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$/)) {
+            throw new GradleException(
+                    "label '${label}' does not match the required format YYYY-MM-DD-<kebab-case-event-name>. " +
+                    "Example: 2026-05-04-jqwik-after, 2026-08-12-aggregate-before."
+            )
+        }
+
+        String versionDir = "v${project.version}"
+        File destinationRoot = new File(rootDir, "coverage-history/${versionDir}/${label}")
+        if (destinationRoot.exists()) {
+            throw new GradleException(
+                    "coverage-history/${versionDir}/${label} already exists. " +
+                    "Pick a different event-name suffix or delete the existing snapshot first."
+            )
+        }
+        destinationRoot.mkdirs()
+
+        subprojects.each { sub ->
+            File jacocoSrc = new File(sub.buildDir, 'reports/jacoco/test')
+            if (jacocoSrc.exists()) {
+                File jacocoDst = new File(destinationRoot, "${sub.name}/jacoco")
+                copy {
+                    from jacocoSrc
+                    into jacocoDst
+                }
+            }
+            File pitestSrc = new File(sub.buildDir, 'reports/pitest')
+            if (pitestSrc.exists()) {
+                File pitestDst = new File(destinationRoot, "${sub.name}/pitest")
+                copy {
+                    from pitestSrc
+                    into pitestDst
+                }
+            }
+        }
+
+        // 루트의 aggregate 리포트가 존재하면 함께 보관
+        File aggregateSrc = new File(rootProject.buildDir, 'reports/jacoco/aggregate')
+        if (aggregateSrc.exists()) {
+            copy {
+                from aggregateSrc
+                into new File(destinationRoot, 'aggregate')
+            }
+        }
+
+        // 한 줄 요약 파일도 함께 남긴다 (XML 파싱 없이 빠른 비교용)
+        File summary = new File(destinationRoot, 'summary.txt')
+        summary.text = "version: ${project.version}\nlabel: ${label}\ngenerated_at: ${new Date()}\n\n"
+        subprojects.each { sub ->
+            File xml = new File(sub.buildDir, 'reports/jacoco/test/jacocoTestReport.xml')
+            if (xml.exists()) {
+                summary.append("[${sub.name}] jacoco xml: ${xml.absolutePath}\n")
+            }
+            File pitestIndex = new File(sub.buildDir, 'reports/pitest/index.html')
+            if (pitestIndex.exists()) {
+                summary.append("[${sub.name}] pit html : ${pitestIndex.absolutePath}\n")
+            }
+        }
+        println "Coverage snapshot archived to: ${destinationRoot}"
+    }
+}
+
+// =============================================================
+// 멀티모듈 통합 커버리지 리포트
+//
+//   ./gradlew jacocoAggregateReport
+//
+// bootstrap의 통합 테스트가 다른 모듈(presentation/application/infrastructure)
+// 클래스를 실행한 흔적까지 한 번에 모아 단일 리포트로 만든다. 모듈별 단위 측정에서는
+// "presentation 24.8%" 처럼 낮게 보이는 핸들러들이 통합 테스트로 실제 얼마나 커버되는지
+// aggregate에서 정직한 수치로 드러난다.
+//
+// 산출물: build/reports/jacoco/aggregate/{html,xml}/
+// =============================================================
+tasks.register('jacocoAggregateReport', JacocoReport) {
+    group = 'verification'
+    description = 'Combine JaCoCo execution data from every subproject into a single aggregated report.'
+
+    subprojects.each { sub -> dependsOn ":${sub.name}:test" }
+
+    def coveredProjects = subprojects.findAll { it.plugins.hasPlugin('jacoco') }
+
+    // task 실행 시점에 fileTree로 .exec 파일을 다시 스캔한다 (lazy).
+    executionData.from(fileTree(rootDir) {
+        include '*/build/jacoco/test.exec'
+    })
+
+    sourceDirectories.from(files(coveredProjects.collect {
+        it.sourceSets.main.allSource.srcDirs
+    }))
+
+    classDirectories.from(files(coveredProjects.collect { sub ->
+        sub.sourceSets.main.output.classesDirs.collect { dir ->
+            fileTree(dir: dir, exclude: rootProject.ext.jacocoExclusions)
+        }
+    }.flatten()))
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/aggregate/html')
+        xml.outputLocation = layout.buildDirectory.file('reports/jacoco/aggregate/jacocoAggregateReport.xml')
     }
 }

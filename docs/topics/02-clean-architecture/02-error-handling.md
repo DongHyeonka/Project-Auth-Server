@@ -1,5 +1,10 @@
 # 에러 핸들링 아키텍처
 
+> **정책 단일 출처**: 코드/테스트/게이트로 강제되는 13개 정책의 *현재 상태*는
+> [`docs/exception-handling-policy.md`](../../exception-handling-policy.md) 가 정식 정의입니다.
+> 본 문서는 그 정책이 어떤 *문제 의식과 흐름*에서 왔는지를 설명하는 아키텍처 문서입니다.
+> 두 문서가 어긋나면 정책 문서가 우선합니다.
+
 ## 1. Context & Scope
 
 ### 목적
@@ -42,15 +47,20 @@
 
 ### Goals
 
-- 예외 발생 위치와 무관하게 `ApiResult` JSON 응답 계약을 보장한다
+- 예외 발생 위치와 무관하게 `ApiResult` JSON 응답 계약을 보장한다 — `data` 와 `errors` 를 분리하여 OpenAPI 가 `data` 를 oneOf 로 모델링할 필요 없게 한다
 - 예상 예외 (4xx) 와 비예상 예외 (5xx) 의 로깅 정책을 분리한다
-- 요청별 `traceId` 로 로그와 응답을 연결할 수 있게 한다
-- 새 ErrorCode 추가 시 HttpStatus 매핑 누락을 컴파일 타임에 방지한다
+- 요청별 `traceId` 로 로그와 응답을 연결할 수 있게 한다 — MDC 누락 시 sentinel `"-"` 노출
+- 내부 분류 코드 (`InfrastructureErrorCode`) 가 클라이언트 응답 경로에 *컴파일 단계에서* 닿지 못하게 한다
+- 새 client-facing ErrorCode 추가 시 매퍼/테이블 누락을 *classpath 스캔 가드 테스트* 로 즉시 검출한다
+- 익명 사용자의 `AccessDenied` 는 401, 인증된 사용자만 403 (SDK 토큰 재발급 흐름 보존)
+- advice 우회 경로(`sendError`, 이중 폴트, 컨테이너 라우팅 실패) 는 `/error` 가 안전망으로 받되 *원래 status 를 보존* 한다 — 404 가 500 으로 둔갑하지 않게
+- 정책 회귀를 JaCoCo Tier 1 95%+ / PIT mutation 게이트 / jqwik 속성 테스트로 자동 차단한다
 
 ### Non-Goals
 
 - RFC 7807 (Problem Details) 표준 도입 — 현재 `ApiResult` 계약이 충분히 일관적이므로 이관 비용 대비 이점이 낮음
 - 분산 추적 (Distributed Tracing) — 현재 단일 서비스이므로 MDC 기반 UUID 로 충분
+- i18n MessageSource 도입 — `ClientFacingErrorCode.message()` 는 한국어 하드코딩이며, 별도 사건으로 미룸
 
 ## 4. Architecture Overview
 
@@ -113,28 +123,52 @@ RuntimeException
 - **BusinessException**: 비즈니스 유스케이스 예외. `ErrorCode` (code + message) 를 반드시 보유. HTTP status 매핑의 기준점. `cause` 체이닝을 지원하여 도메인 예외 변환 시 원본 스택 트레이스를 보존할 수 있음.
 - **InfrastructureException**: 기술 구현체의 장애. `InfrastructureErrorCode` (INFRA- 접두사) 를 보유하여 인프라 장애 유형을 구분. bootstrap 의 `InfrastructureExceptionHandler` 에서 전용 처리되며, 상세 메시지와 인프라 코드는 로그에만 기록하고 사용자에게는 `COMMON-999` 만 응답.
 
-#### 예외-응답 매핑 흐름
+#### 예외-응답 매핑 흐름 (sealed 분리)
 
 ```
-ErrorCode interface
-  ├── CommonErrorCode enum         → ApiErrorHttpStatusMapper.mapCommon()
-  ├── AuthErrorCode enum           → ApiErrorHttpStatusMapper.mapAuth()
-  ├── UserErrorCode enum           → ApiErrorHttpStatusMapper.mapUser()
-  └── InfrastructureErrorCode enum → default (항상 500)
+ErrorCode  (sealed)
+  permits ClientFacingErrorCode, ExternalErrorCode
+
+  ClientFacingErrorCode  (non-sealed marker)         ExternalErrorCode  (non-sealed marker)
+    ├── CommonErrorCode   → mapCommon()                ├── InfrastructureErrorCode  (내부 분류 전용)
+    ├── AuthErrorCode     → mapAuth()                  └── (다른 인프라 모듈도 여기에 추가)
+    └── PresentationErrorCode → mapPresentation()
 ```
 
-`ApiErrorHttpStatusMapper` 는 패턴 매칭 switch 를 사용합니다. `CommonErrorCode`, `AuthErrorCode`, `UserErrorCode` 처럼 클라이언트에 직접 노출되는 enum 은 각 전용 분기에서 관리합니다. 반면 mapper 전체는 `default → 500` 을 유지하므로, *"모든 ErrorCode 가 컴파일 타임에 완전 매핑된다"* 기보다 *"client-facing code 가 기본 500 폴백으로 잘못 떨어지지 않게 관리한다"* 에 더 가깝습니다.
+##### 매퍼 시그니처 좁히기 — 정책을 *컴파일 단계에서* 강제
 
-`InfrastructureErrorCode` 는 presentation 레이어에서 직접 import 하지 않으므로 (레이어 규칙) `default → 500` 으로 매핑됩니다. 인프라 에러는 항상 500 이 적절하므로 이 default 폴백이 의도된 동작입니다.
+```java
+public static HttpStatus map(ClientFacingErrorCode errorCode) { ... }
+```
 
-중요한 점은 **HTTP status 가 500 으로 매핑되는 것** 과 **클라이언트 응답 코드가 `INFRA-*` 가 되는 것** 은 다른 문제라는 점입니다. 이 프로젝트는 후자를 의도적으로 하지 않습니다.
+매퍼는 `ErrorCode` 가 아니라 `ClientFacingErrorCode` 만 받습니다. 그래서:
 
-- `InfrastructureErrorCode`: 로그, 모니터링, 알림 분류용 내부 코드
-- `COMMON-999`: 외부 API 응답에서 노출하는 단일 500 코드
+- `InfrastructureErrorCode` 를 매퍼에 인자로 넣는 모든 코드는 **`javac` 단계에서 컴파일 실패** 합니다.
+- `BusinessException.errorCode` 필드 타입도 `ClientFacingErrorCode` 로 좁혀, `BusinessException` 을 잘못된 코드로 *생성하는 것 자체* 가 불가능합니다.
 
-즉, 운영자는 로그에서 `INFRA-003`, `INFRA-999` 를 보고 원인을 좁히고, 클라이언트는 구현 세부사항이 제거된 `COMMON-999` 를 받습니다.
+이 정책의 의도는 두 가지를 코드 한 줄로 동시에 표현하는 것입니다.
 
-추가로 `ApiErrorHttpStatusMapperClientFacingCoverageTest` 가 모든 클라이언트 대상 ErrorCode (Common, Auth, User) enum 값이 mapper 의 기본 500 폴백으로 잘못 떨어지지 않는지 검증합니다. 새 ErrorCode 를 추가하고 mapper 업데이트를 누락하면 테스트가 실패합니다.
+- 내부 분류 코드 (`INFRA-003`, `INFRA-999` 등) 는 로그·모니터링·알람 라우팅용으로 *유지* 한다.
+- 동시에 클라이언트 응답 경로에는 *닿을 수 없다* — 우회로가 없다.
+
+##### `ClientFacingErrorCode` 가 *non-sealed* 인 이유
+
+다른 모듈에서 클라이언트 노출 코드를 추가할 수 있어야 하므로 `ClientFacingErrorCode` 자체는 `non-sealed` 입니다. 그러면 매퍼의 switch 가 비-exhaustive 가 되므로 다음 두 단계로 회귀를 막습니다.
+
+1. `ApiErrorHttpStatusMapper.map(...)` 의 `default` 분기는 `WARN` 로그를 남기고 500 으로 폴백합니다 — 사일런트 500 방지.
+2. `ApiErrorHttpStatusMapperClientFacingCoverageTest` 가 *classpath 스캔* 으로 모든 `ClientFacingErrorCode` 구현을 찾아 매핑 테이블에 빠진 값이 있으면 테스트 실패시킵니다 — 신규 코드 누락 방지.
+
+추가로 같은 테스트가 enum 값별 정확 status 매핑 (`each_client_facing_error_code_maps_to_its_exact_expected_http_status`) 과 코드 문자열 유일성 (`all_client_facing_error_codes_have_unique_string_codes`) 을 함께 단언합니다.
+
+##### `InfrastructureErrorCode` 의 운영 가치는 그대로
+
+매퍼에서 차단된다고 해서 `InfrastructureErrorCode` 가 무용한 것은 아닙니다.
+
+- 로그에서 `INFRA-003`, `INFRA-999` 를 보고 운영자가 원인을 좁힙니다.
+- 알람 라우팅·대시보드·on-call 분기 모두 이 코드 기준입니다.
+- 클라이언트는 구현 세부사항이 제거된 `COMMON-999` 만 받습니다.
+
+즉 같은 사건에 대해 *내부 분류* 와 *외부 노출* 을 분리해서 관리합니다.
 
 ## 5. How It Works
 
@@ -230,37 +264,78 @@ public class SecurityExceptionHandler implements AuthenticationEntryPoint, Acces
         .accessDeniedHandler(securityExceptionHandler))
 ```
 
-#### 단계 3: Presentation 예외 처리 (책임별 분리)
+#### 단계 3: Presentation 예외 처리 (5 + 1 계층)
 
-초기에는 `GlobalExceptionHandler` 하나에 모든 MVC 예외가 모여 있었지만, 책임이 커지면서 역할별로 분리했습니다. `DispatcherServlet` 이후 발생하는 예외는 이제 아래 핸들러가 나눠 처리합니다.
+초기에는 `GlobalExceptionHandler` 하나에 모든 예외가 모여 있었지만, 발생 *위치별* 로 책임을 분리하면서 현재는 **5계층 advice + 2개의 advice-밖 안전망 (= 5 + 1)** 으로 운영합니다.
 
-```java
-// presentation — ValidationExceptionHandler
-@ExceptionHandler(MethodArgumentNotValidException.class)         // Bean Validation → 400
-@ExceptionHandler(ConstraintViolationException.class)            // @Validated 제약 위반 → 400
-@ExceptionHandler(HandlerMethodValidationException.class)        // 메서드 파라미터 검증 → 400
+```text
+          @Order                    위치           책임
+─────────────────────────────────────────────────────────────────────────────
+HIGHEST_PRECEDENCE        bootstrap   InfrastructureExceptionHandler
+                                       Infra/Domain 누수 → COMMON-999 정규화
+HIGHEST_PRECEDENCE + 5    bootstrap   SecurityResponseExceptionHandler
+                                       AuthenticationException / AccessDeniedException
+                                       익명 → 401 · 인증 → 403 + audit
+HIGHEST_PRECEDENCE + 10   presentation  ValidationExceptionHandler
+                                       Bean Validation (Method/Constraint/HandlerMethod)
+                                       → errors 맵 (JSON Pointer 키, RFC 6901)
+HIGHEST_PRECEDENCE + 20   presentation  RequestExceptionHandler
+                                       Spring MVC 입력 11 종 + ResponseStatus / Upload
+LOWEST_PRECEDENCE         presentation  ApplicationExceptionHandler
+                                       BusinessException + MessageNotWritable
+                                       + @ExceptionHandler(Exception.class)  ← 안전망
 
-// presentation — RequestExceptionHandler
-@ExceptionHandler(HttpMessageNotReadableException.class)         // 잘못된 JSON → 400
-@ExceptionHandler(HttpRequestMethodNotSupportedException.class)  // 잘못된 메서드 → 405
-@ExceptionHandler(MissingServletRequestParameterException.class) // 파라미터 누락 → 400
-@ExceptionHandler(TypeMismatchException.class)                   // 타입 불일치 → 400
-@ExceptionHandler(NoResourceFoundException.class)                // 존재하지 않는 리소스 → 404
+(advice 밖)               bootstrap   SecurityExceptionHandler
+                                       필터 단 AuthenticationEntryPoint /
+                                       AccessDeniedHandler — advice 가 못 보는 경로
+                                       audit + response.isCommitted() 체크
 
-// presentation — ApplicationExceptionHandler
-@ExceptionHandler(BusinessException.class)                       // 비즈니스 예외 → log.warn, 4xx/409
-@ExceptionHandler(HttpMessageNotWritableException.class)         // 응답 직렬화 실패 → 500
-@ExceptionHandler(Exception.class)                               // 나머지 → log.error(stacktrace), 500
-
-// bootstrap — InfrastructureExceptionHandler (@Order(HIGHEST_PRECEDENCE))
-@ExceptionHandler(InfrastructureException.class)                 // 인프라 장애 → log.error, 500 (COMMON-999 고정)
+(/error 매핑)             bootstrap   ApiErrorController
+                                       advice 우회 (sendError, 이중 폴트, 컨테이너 라우팅 실패)
+                                       — 컨테이너가 결정한 status 그대로 보존
+                                       — 본문만 ApiResult 로 정규화
 ```
 
-**로깅 정책이 분리되는 지점이 바로 여기입니다:**
+##### 왜 `SecurityResponseExceptionHandler` 가 bootstrap 에 있는가
+
+ArchUnit 규칙(`presentation_must_not_read_security_context_directly`, `presentation_must_not_accept_raw_spring_security_authentication`) 이 presentation 모듈의 `org.springframework.security.core.*` 직접 의존을 막습니다. 익명/인증 분기는 `SecurityContextHolder` + `Authentication` 을 보아야 하므로, 이 advice 는 bootstrap 에 둡니다 — 룰 우회 없이 정직하게 분리.
+
+##### `SecurityResponseExceptionHandler` 의 익명/인증 분기 정책
+
+```java
+@ExceptionHandler(AccessDeniedException.class)
+public ResponseEntity<ApiResult<Void>> handle(AccessDeniedException ex, HttpServletRequest req) {
+    if (isAnonymous(SecurityContextHolder.getContext().getAuthentication(), req)) {
+        // 익명 → 401, 클라이언트 SDK 의 토큰 재발급 트리거 유지
+        return failure(AUTHENTICATION_REQUIRED, ...);
+    }
+    // 인증된 사용자 → 403, 권한 부족 의미
+    return failure(ACCESS_DENIED, ...);
+}
+
+private static boolean isAnonymous(Authentication auth, HttpServletRequest req) {
+    if (req.getUserPrincipal() != null) return false; // 비동기 컨텍스트 유실 방어
+    return auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken;
+}
+```
+
+이전에는 모든 `AccessDeniedException` 을 403 으로 응답했는데, 익명 사용자에게도 403 을 주면 SDK 가 토큰 재발급 흐름을 트리거하지 못합니다. `ExceptionTranslationFilter` 가 필터 단에서 하던 분기 (익명 → 401) 를 컨트롤러 단(`@PreAuthorize` 등) 에도 동일하게 적용한 것입니다. `getUserPrincipal()` 폴백은 비동기 컨트롤러로 SecurityContext 가 워커 스레드에 전파되지 않은 케이스를 방어합니다.
+
+##### `ApiErrorController` 의 status 보존 정책
+
+이전에는 `/error` 가 무조건 500 을 반환해 진짜 404 가 500 으로 둔갑하면서 LB 헬스체크 오작동·SDK 5xx 자동 재시도 폭주가 발생했습니다. 현재는 `RequestDispatcher.ERROR_STATUS_CODE` 를 그대로 보존하고, 5xx 만 `COMMON-999` 로 정규화, 4xx 는 `RESOURCE_NOT_FOUND` / `METHOD_NOT_ALLOWED` / `UNHANDLED_CLIENT_ERROR` 등으로 분류합니다.
+
+##### `Exception.class` 안전망
+
+`ApplicationExceptionHandler` 의 `@ExceptionHandler(Exception.class)` 가 advice 안의 마지막 안전망입니다. 매칭되지 않은 모든 `RuntimeException` 을 잡아 ERROR 레벨 풀스택 로깅 + `COMMON-999` 응답으로 정규화합니다. 안전망이 없으면 unmatched 예외가 `/error` 로 흘러가 `ApiResult` 계약이 깨질 수 있습니다.
+
+##### 로깅 정책이 분리되는 지점
+
 - 예상 예외 (비즈니스 / 도메인 / 클라이언트 잘못) → `log.warn` — 알림 불필요
 - 비예상 예외 (인프라 장애, 버그) → `log.error` — 즉시 알림 대상
+- 모든 핸들러 로그가 `method=`, `requestPath=`, `errorCode=` 필드를 일관되게 포함 (정책 11)
 
-> Validation 예외의 응답 데이터 정규화 (`Map<String, List<String>>`), `ConstraintViolation` / `MessageSourceResolvable` 의미, `@ConfigurationProperties` 검증과의 차이는 [02a-validation-deep-dive.md](./02a-validation-deep-dive.md) 에서 따로 다룹니다.
+> Validation 예외 응답 정규화, `ConstraintViolation` / `MessageSourceResolvable` 의미, `@ConfigurationProperties` 검증과의 차이는 [02a-validation-deep-dive.md](./02a-validation-deep-dive.md) 에서 따로 다룹니다.
 
 #### 단계 4: 인프라 예외 번역
 
@@ -330,40 +405,50 @@ bootstrap 의 `InfrastructureExceptionHandler` (`@Order(HIGHEST_PRECEDENCE)`) �
 
 ### 얻은 이점
 
-- 예외 발생 위치 (도메인, 인프라, Security 필터, Spring MVC) 와 무관하게 `ApiResult` JSON 응답 보장
+- 예외 발생 위치 (도메인, 인프라, Security 필터/컨트롤러, Spring MVC) 와 무관하게 `ApiResult` JSON 응답 보장
+- 내부 분류 코드 (`InfrastructureErrorCode`) 의 클라이언트 응답 경로 진입을 *컴파일 단계에서 차단* — 런타임 검사 X
+- 익명 사용자 401 분기로 클라이언트 SDK 의 토큰 재발급 흐름 보존
+- `/error` 안전망이 컨테이너 status 를 보존 — 진짜 404 가 500 으로 둔갑해 LB/SDK 정책이 깨지는 사고 차단
+- `ApiResult` 의 `data` / `errors` 분리로 OpenAPI 가 응답을 oneOf 로 모델링할 필요 없음
 - 예상 / 비예상 예외의 로깅 레벨 분리로 운영 알림 설정 가능
-- 요청별 `traceId` 로 로그-응답 연결 (응답 헤더 `X-Trace-Id` + 응답 바디 `traceId` 필드)
-- `SecurityExceptionHandler` 가 `actorId`, `method`, `requestPath` 를 남기고, traceId 는 로그 패턴이 자동 부착하여 보안 거부 로그의 운영 가치를 높임
-- 새 client-facing ErrorCode 추가 시 `ApiErrorHttpStatusMapperClientFacingCoverageTest` 에 의한 기본 500 폴백 누락 탐지
+- 요청별 `traceId` 로 로그-응답 연결 (응답 헤더 `X-Trace-Id` + 응답 바디 `traceId` 필드, MDC 누락 시 sentinel `"-"`)
+- 새 `ClientFacingErrorCode` 구현 추가 시 *classpath 스캔 가드 테스트* 가 매핑 테이블 누락을 즉시 검출
+- 정확값 매핑 테이블 + PIT mutation 게이트 (application 90%, presentation 75%) + jqwik 30+ 속성 테스트로 단언 강도 자동 검증
+- 검증 실패 응답 키를 *JSON Pointer (RFC 6901)* 로 통일 — 클라이언트가 두 가지 키 형식을 분기 처리할 필요 없음
 - `DomainException` 이 웹 계층까지 직접 올라오는 경로를 제거하여, presentation 이 순수 HTTP 번역 책임에만 집중할 수 있음
-- 인프라 장애를 `InfrastructureErrorCode` 로 유형 구분하여 모니터링 시 장애 원인 분류 가능
-- validation / request / application / infrastructure 예외 책임이 분리되어 핸들러 확장 시 유지보수 부담을 줄임
+- 5 advice + 2 안전망 책임 분리로 핸들러 확장 시 유지보수 부담을 줄임
 
 ### 감수한 비용
 
-- `ApiResult` 에 `timestamp`, `traceId` 필드가 추가되어 기존 응답 계약이 변경됨
-- Security 예외 핸들링 (필터) 과 MVC 예외 핸들링 (`@RestControllerAdvice`) 이 물리적으로 분리되어 있으므로 `ApiResult` 생성 로직이 두 곳에 존재
-- `InfrastructureExceptionHandler` 가 bootstrap 에 있어서 예외 핸들러가 presentation 과 bootstrap 두 모듈에 분산됨 (레이어 규칙 준수를 위한 트레이드오프)
-- 저장 데이터 복원 실패를 `INFRA-003` 으로 분류하면서, 일부 데이터 불일치가 곧바로 500 으로 처리됨. 운영 측면에서는 더 안전하지만, 데이터 정합성 이슈를 별도로 관찰할 준비가 필요함
+- `ApiResult` 에 `errors`, `traceId`, `timestamp` 필드가 추가되어 기존 응답 계약이 변경됨 (총 7 필드)
+- Security 예외 핸들링이 *세 곳* 에 분산: (1) 필터 단 `SecurityExceptionHandler`, (2) 컨트롤러 단 `SecurityResponseExceptionHandler`, (3) `/error` 안전망 `ApiErrorController`. 대신 `SecurityAuditTrailWriter` 단일 채널로 audit 만은 한 곳에서 받게 통일.
+- `InfrastructureExceptionHandler` / `SecurityResponseExceptionHandler` / `ApiErrorController` 가 bootstrap 에 있어서 예외 처리 코드가 presentation 과 bootstrap 두 모듈에 분산됨 (레이어 규칙 준수를 위한 트레이드오프)
+- 저장 데이터 복원 실패를 `INFRA-003` 으로 분류하면서, 일부 데이터 불일치가 곧바로 500 으로 처리됨
+- `ClientFacingErrorCode` 가 `non-sealed` 라 매퍼에 `default` 분기가 필요. 컴파일러가 exhaustiveness 를 강제하지 못하므로 *classpath 스캔 가드 테스트* + WARN 로그 두 가지로 보완
 
 ### 남은 리스크
 
 - `TraceIdFilter` 가 심는 MDC 키와 `logback-spring.xml` 패턴이 어긋나면 traceId 상관관계가 끊길 수 있음
-- ErrorCode 별 로그 레벨 세분화가 아직 없음 — 현재는 예외 계층 단위 (`warn` vs `error`) 로만 구분
-- `DomainException` 이 누수되면 이제 원본 메시지 대신 generic 500 으로 처리되므로, application / infrastructure 경계 번역 누락은 테스트로 계속 감시해야 함
+- 익명/인증 분기는 ThreadLocal `SecurityContextHolder` 를 가정. 비동기 컨트롤러 도입 시 `getUserPrincipal()` 폴백만으로 충분한지는 도입 시점에 재검증 필요
+- `ClientFacingErrorCode.message()` 는 한국어 하드코딩 — i18n MessageSource 도입은 별도 사건으로 미룸
+- `DomainException` 이 누수되면 원본 메시지 대신 generic 500 으로 처리되므로, application / infrastructure 경계 번역 누락은 테스트로 계속 감시해야 함
 
 ## 9. References
 
 ### 관련 코드
 
 - 예외 계층 기반: [DomainException.java](../../../domain/src/main/java/com/project/auth/domain/user/exception/DomainException.java), [BusinessException.java](../../../application/src/main/java/com/project/auth/application/support/exception/BusinessException.java), [InfrastructureException.java](../../../infrastructure/src/main/java/com/project/auth/infrastructure/support/exception/InfrastructureException.java)
-- 에러 코드: [ErrorCode.java](../../../application/src/main/java/com/project/auth/application/support/exception/ErrorCode.java), [CommonErrorCode.java](../../../application/src/main/java/com/project/auth/application/support/exception/CommonErrorCode.java), [AuthErrorCode.java](../../../application/src/main/java/com/project/auth/application/auth/exception/AuthErrorCode.java), [InfrastructureErrorCode.java](../../../infrastructure/src/main/java/com/project/auth/infrastructure/support/exception/InfrastructureErrorCode.java)
-- 예외 핸들러: [ValidationExceptionHandler.java](../../../presentation/src/main/java/com/project/auth/presentation/support/exception/ValidationExceptionHandler.java), [RequestExceptionHandler.java](../../../presentation/src/main/java/com/project/auth/presentation/support/exception/RequestExceptionHandler.java), [ApplicationExceptionHandler.java](../../../presentation/src/main/java/com/project/auth/presentation/support/exception/ApplicationExceptionHandler.java), [InfrastructureExceptionHandler.java](../../../bootstrap/src/main/java/com/project/auth/config/web/InfrastructureExceptionHandler.java), [SecurityExceptionHandler.java](../../../bootstrap/src/main/java/com/project/auth/config/auth/security/SecurityExceptionHandler.java)
-- 응답: [ApiResult.java](../../../presentation/src/main/java/com/project/auth/presentation/support/response/ApiResult.java), [ApiErrorHttpStatusMapper.java](../../../presentation/src/main/java/com/project/auth/presentation/support/exception/ApiErrorHttpStatusMapper.java)
-- 테스트: [ApiErrorHttpStatusMapperClientFacingCoverageTest.java](../../../bootstrap/src/test/java/com/project/auth/architecture/ApiErrorHttpStatusMapperClientFacingCoverageTest.java), [ExceptionHandlingIntegrationTest.java](../../../bootstrap/src/test/java/com/project/auth/ExceptionHandlingIntegrationTest.java)
+- 에러 코드 (sealed 분리): [ErrorCode.java](../../../application/src/main/java/com/project/auth/application/support/exception/ErrorCode.java), [ClientFacingErrorCode.java](../../../application/src/main/java/com/project/auth/application/support/exception/ClientFacingErrorCode.java), [ExternalErrorCode.java](../../../application/src/main/java/com/project/auth/application/support/exception/ExternalErrorCode.java), [CommonErrorCode.java](../../../application/src/main/java/com/project/auth/application/support/exception/CommonErrorCode.java), [AuthErrorCode.java](../../../application/src/main/java/com/project/auth/application/support/exception/AuthErrorCode.java), [PresentationErrorCode.java](../../../presentation/src/main/java/com/project/auth/presentation/support/exception/PresentationErrorCode.java), [InfrastructureErrorCode.java](../../../infrastructure/src/main/java/com/project/auth/infrastructure/support/exception/InfrastructureErrorCode.java)
+- 예외 핸들러 (5 advice): [ValidationExceptionHandler.java](../../../presentation/src/main/java/com/project/auth/presentation/support/exception/ValidationExceptionHandler.java), [RequestExceptionHandler.java](../../../presentation/src/main/java/com/project/auth/presentation/support/exception/RequestExceptionHandler.java), [ApplicationExceptionHandler.java](../../../presentation/src/main/java/com/project/auth/presentation/support/exception/ApplicationExceptionHandler.java), [InfrastructureExceptionHandler.java](../../../bootstrap/src/main/java/com/project/auth/config/web/InfrastructureExceptionHandler.java), [SecurityResponseExceptionHandler.java](../../../bootstrap/src/main/java/com/project/auth/config/web/SecurityResponseExceptionHandler.java)
+- advice 밖 안전망: [SecurityExceptionHandler.java](../../../bootstrap/src/main/java/com/project/auth/config/auth/security/SecurityExceptionHandler.java) (필터 단), [ApiErrorController.java](../../../bootstrap/src/main/java/com/project/auth/config/web/ApiErrorController.java) (`/error` 매핑)
+- 응답: [ApiResult.java](../../../presentation/src/main/java/com/project/auth/presentation/support/response/ApiResult.java) (7 필드 + `@JsonInclude(NON_NULL)`), [ApiErrorHttpStatusMapper.java](../../../presentation/src/main/java/com/project/auth/presentation/support/exception/ApiErrorHttpStatusMapper.java) (시그니처 좁히기)
+- 테스트: [ApiErrorHttpStatusMapperClientFacingCoverageTest.java](../../../bootstrap/src/test/java/com/project/auth/architecture/ApiErrorHttpStatusMapperClientFacingCoverageTest.java) (정확값 + classpath 가드), [ExceptionHandlingIntegrationTest.java](../../../bootstrap/src/test/java/com/project/auth/ExceptionHandlingIntegrationTest.java), [ApiErrorControllerIntegrationTest.java](../../../bootstrap/src/test/java/com/project/auth/ApiErrorControllerIntegrationTest.java), [ValidationExceptionHandlerIntegrationTest.java](../../../bootstrap/src/test/java/com/project/auth/ValidationExceptionHandlerIntegrationTest.java)
 
 ### 관련 문서
 
+- [exception-handling-policy.md](../../exception-handling-policy.md) — 13개 정책 단일 출처 (정식 정의)
+- [testing-coverage-policy.md](../../testing-coverage-policy.md) — JaCoCo / PIT / jqwik Tier 분류와 임계치
+- [testing-history/](../../testing-history/README.md) — 사건 단위 before/after 비교 기록
 - [Architecture Overview](../../architecture/README.md) — 레이어 구조와 의존 방향
 - [03-adr-boundary-refactoring.md](./03-adr-boundary-refactoring.md) — 경계 재정렬 결정 기록
 - [02a-validation-deep-dive.md](./02a-validation-deep-dive.md) — Validation 예외 응답 정규화, ConstraintViolation 의미, ConfigurationProperties 검증

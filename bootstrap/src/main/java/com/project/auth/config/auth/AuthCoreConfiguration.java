@@ -3,6 +3,7 @@ package com.project.auth.config.auth;
 import com.project.auth.application.auth.identity.LoadKeycloakUserUseCase;
 import com.project.auth.application.auth.identity.internal.KeycloakUserLoader;
 import com.project.auth.application.auth.identity.port.out.LoadKeycloakUserPort;
+import com.project.auth.application.auth.identity.port.out.RegisterKeycloakUserPort;
 import com.project.auth.application.support.audit.AuthAuditEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,11 +21,15 @@ public class AuthCoreConfiguration {
     @Bean
     public LoadKeycloakUserUseCase loadKeycloakUserUseCase(
             LoadKeycloakUserPort loadKeycloakUserPort,
-            AuthAuditEventPublisher authAuditEventPublisher
+            RegisterKeycloakUserPort registerKeycloakUserPort,
+            AuthAuditEventPublisher authAuditEventPublisher,
+            Clock clock
     ) {
         return new KeycloakUserLoader(
                 loadKeycloakUserPort,
-                authAuditEventPublisher
+                registerKeycloakUserPort,
+                authAuditEventPublisher,
+                clock
         );
     }
 }

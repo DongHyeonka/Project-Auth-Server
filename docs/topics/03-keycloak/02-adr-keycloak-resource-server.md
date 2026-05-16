@@ -43,7 +43,7 @@ Keycloak이 이미 OIDC Provider와 broker 역할을 수행할 수 있으므로,
 
 ## Decision
 
-Option 2를 채택합니다. Keycloak을 인증 주체로 두고 auth-server는 Spring Security Resource Server로 token을 검증하며, 회원가입 UX와 계정 lifecycle은 Keycloak realm에 위임합니다. auth-server는 `(provider=KEYCLOAK, provider_subject=sub)` 기준으로 이미 연결된 내부 사용자만 조회합니다.
+Option 2를 채택합니다. Keycloak을 인증 주체로 두고 auth-server는 Spring Security Resource Server로 token을 검증하며, 회원가입 UX와 계정 lifecycle은 Keycloak realm에 위임합니다. auth-server는 `(provider=KEYCLOAK, provider_subject=sub)` 기준으로 내부 사용자를 식별합니다. 이후 내부 사용자 생성 정책은 [ADR-005](./05-adr-keycloak-user-auto-registration.md)에서 자동 등록으로 보강했습니다.
 
 ## Consequences
 
@@ -62,7 +62,7 @@ Option 2를 채택합니다. Keycloak을 인증 주체로 두고 auth-server는 
 
 ### 위험 완화
 
-- `GET /api/v1/auth/me`는 내부 사용자 조회만 수행하고 token 검증은 Resource Server에 맡깁니다.
-- 연결된 내부 사용자가 없으면 자동 생성이나 자동 연결 없이 `AUTH-004` 404를 반환합니다.
+- `GET /api/v1/auth/me`의 token 검증은 Resource Server에 맡깁니다.
+- 연결된 내부 사용자가 없으면 [ADR-005](./05-adr-keycloak-user-auto-registration.md)에 따라 email 충돌 검사 후 내부 사용자를 자동 등록합니다.
 - role/claim mapping은 `KeycloakJwtAuthenticationConverter` 한 곳에 둡니다.
 - 조회 흐름은 내부 DB lookup만 수행하므로 `GET`에 숨은 쓰기 부작용을 두지 않습니다.

@@ -6,7 +6,7 @@ Keycloak 을 OAuth2 / OIDC Provider 겸 Identity Broker 로 두고 auth-server �
 
 - auth-server 는 Keycloak realm 이 발급한 access token 을 ResourceServer 로 검증한다.
 - 로그인, OAuth2 broker, token 발급, issuer / JWKS 공개 책임은 Keycloak 이 가진다.
-- auth-server 는 검증된 claim 을 바탕으로 이미 연결된 내부 사용자를 식별한다.
+- auth-server 는 검증된 claim 을 바탕으로 내부 사용자를 식별하고, 처음 보는 Keycloak `sub` 는 email 충돌 검사 후 내부 사용자로 자동 등록한다.
 
 ## 문서
 
@@ -16,6 +16,7 @@ Keycloak 을 OAuth2 / OIDC Provider 겸 Identity Broker 로 두고 auth-server �
 | [02-adr-keycloak-resource-server.md](./02-adr-keycloak-resource-server.md) | 인증 주체를 Keycloak 으로 이전한 ADR-002 |
 | [03-claim-role-design.md](./03-claim-role-design.md) | Keycloak claim / role 설계 + sample JWT payload |
 | [04-adr-token-ownership-cleanup.md](./04-adr-token-ownership-cleanup.md) | 자체 JWT / Vault Transit / 로컬 회원가입 일괄 제거 ADR-004 |
+| [05-adr-keycloak-user-auto-registration.md](./05-adr-keycloak-user-auto-registration.md) | Keycloak 인증 사용자 내부 자동 등록 ADR-005 |
 
 ## 역할 분리
 
